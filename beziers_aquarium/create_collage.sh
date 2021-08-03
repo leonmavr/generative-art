@@ -1,8 +1,11 @@
 #!/bin/bash
+
+rm /tmp/collage*.png
+rm /tmp/drawing_*.png
+
 ./src/generate_fish.py
 
 input=`ls /tmp/drawing_*`
-rm /tmp/collage*.png
 
 montage -border 5 -bordercolor white\
     -geometry 300x260+5+5\
