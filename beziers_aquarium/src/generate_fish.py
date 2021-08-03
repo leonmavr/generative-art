@@ -4,7 +4,7 @@ import random
 from numpy.random import randint
 import itertools as it
 
-for _ in range(10):
+for _ in range(100):
     fish = Fish(
             size = (300, 260),
             sub_canvas = Rect(0, 0, 1, 1), # fill the canvas
