@@ -1,5 +1,7 @@
-# Bezier's aquarium
-
+<h1 align="center">Bezier's aquarium</h1>
+<p align="center"><i>Using Bezier/De Chasteljau curves to create random fish designs</i></p>	
+<hr><p align="center">
+<img src="https://raw.githubusercontent.com/0xLeo/generative-art/master/beziers_aquarium/assets/logo.png" alt="drawing" height="150"/>
 
 ### About
 The purpose of this project is to demonstrate how Bezier/De Chasteljau curves can easily generate some nice random designs. This project generates random fish designs based on cubic Bezier/De Chasteljau curves.  
