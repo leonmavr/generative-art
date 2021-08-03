@@ -27,6 +27,17 @@ The rectangles and control points are listed below:
         + = reference points (control points are defined w.r.t them - b as in box)
 
 ```
+	
+### Requirements
+PIL, aggdraw, and numpy are needed for the Python scripts. You can install them manually or from the `requirements.txt` file:
+```
+pip install -r requirements.txt
+```
+Imagemagick is needed for the `create_collage.sh` script. On Ubuntu, you can install it by:
+```
+sudo apt install imagemagick
+```
+I want to remove this dependency in the future.
 
 ### Usage
 File `generate_fish.py` defines how many fish will be generated, what size, colour, etc. File `create_collage.sh` runs everything and in the end creates a collage of all fish (by default saved as `/tmp/collage.png`). Therefore to execute everything, simply run:
