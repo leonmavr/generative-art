@@ -31,14 +31,16 @@ File `generate_fish.py` defines how many fish will be generated, what size, colo
 ```
 ./create_collage.sh
 ```
-Example outputs:
+Example output:  
+<img src="https://raw.githubusercontent.com/0xLeo/generative-art/master/beziers_aquarium/assets/output1.png" alt="drawing" height="400"/>
 
 
-### Todos
+### TODOs
 This little project is still at very early stage, the code messy, and there may be bugs. For the future:
-- [  ] `Canvas.draw_curve` method: define all brush (fill) and pen (outline) option via one dictionary instead of loose options
-- [  ] Draw more than one upper/lower fin
-- [  ] More fish designs (catfish? marlin?)
-- [  ] Define a random seed in `Fish`'s constructor. Random seed will in turn define the randomness of the control points, and the proportions (body width, tail width, etc.) of the fish.
-- [  ] In `Fish.__init__`, `sub_canvas = Rect(0, 0, .25, .25)` does not work when we want the fish not to start from the origin, e.g. for `Rect(0.125, 0.125, 0.25, 0.25)`. In this case it draws a distorted fish. Fix this so i can stop using the `create_collage.sh` script. 
+
+- [ ] `Canvas.draw_curve` method: define all brush (fill) and pen (outline) option via one dictionary instead of loose options
+- [ ] Draw more than one upper/lower fin
+- [ ] More fish designs (catfish? marlin?)
+- [ ] Define a random seed in `Fish`'s constructor. Random seed will in turn define the randomness of the control points, and the proportions (body width, tail width, etc.) of the fish.
+- [ ] In `Fish.__init__`, `sub_canvas = Rect(0, 0, .25, .25)` does not work when we want the fish not to start from the origin, e.g. for `Rect(0.125, 0.125, 0.25, 0.25)`. In this case it draws a distorted fish. Fix this so i can stop using the `create_collage.sh` script. 
 
