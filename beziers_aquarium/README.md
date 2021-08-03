@@ -5,7 +5,7 @@
 
 ### About
 The purpose of this project is to demonstrate how Bezier/De Chasteljau curves can easily generate some nice random designs. This project generates random fish designs based on cubic Bezier/De Chasteljau curves.  
-Each fish is bounded within a rectangle (box) and each part of it in a sub-rectangle. The high-level rectangle contrails 13 control points p0,...,p12 which define the shape of the fish (each 4 control points define a single curve according to the Bezier curve theory).  
+Each fish is bounded within a rectangle (box) and each part of it in a sub-rectangle. The high-level rectangle contains 13 control points p0,...,p12 which define the shape of the fish (each 4 control points define a single cubic curve according to the Bezier curve theory).  
 The rectangles and control points are listed below:
 ```
         b0           b4           p9        p8        b3
