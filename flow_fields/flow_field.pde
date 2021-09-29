@@ -31,7 +31,7 @@ class Particle {
     acc.mult(0);
   }
 
-  public void follow(PVector[] vectors, boolean[] colls) {
+  public void follow(PVector[] vectors) {
     int x = floor(pos.x / scl);
     int y = floor(pos.y / scl);
     int index = (x-1) + ((y-1) * cols);
@@ -60,47 +60,28 @@ class Particle {
     }
   }
 
-  public void updatePrev(PVector[] vectors, boolean[] colls, boolean byitself) {
+  public void updatePrev() {
     prevPos.x = pos.x;
     prevPos.y = pos.y;
-    if (byitself == false) {
-      return;
-    }
-
-    int x = floor(prevPos.x / scl);
-    int y = floor(prevPos.y / scl);
-    int index = (x-1) + ((y-1) * cols);
-
-    // current index
-    index = index - 1;
-    if (index > vectors.length || index < 0) {
-      index = vectors.length - 1;
-    }
-    if ((colls[index] == true) ) {
-      drawThis = false;
-      return;
-    }
-   
-    colls[index] = true;
   }
 
-  public void edges(PVector[] vectors, boolean[] colls) {
+  public void edges() {
     if (pos.x > width) {
       pos.x = 0;
-      updatePrev(vectors, colls, false);
+      updatePrev();
     }
     if (pos.x < 0) {
       pos.x = width;
-      updatePrev(vectors, colls, false);
+      updatePrev();
     }
 
     if (pos.y > height) {
       pos.y = 0;
-      updatePrev(vectors, colls, false);
+      updatePrev();
     }
     if (pos.y < 0) {
       pos.y = height;
-      updatePrev(vectors, colls, false);
+      updatePrev();
     }
   }
 }
@@ -152,11 +133,10 @@ void draw() {
   zoff = zoff + (inc / 50);
 
   for (int i = 0; i < particles.length; i++) {
-    particles[i].follow(flowField, colls);
+    particles[i].follow(flowField);
     particles[i].update();
-    particles[i].edges(flowField, colls);
+    particles[i].edges();
     particles[i].show();
-    particles[i].updatePrev(flowField, colls, true);
+    particles[i].updatePrev();
   }
 }
-
