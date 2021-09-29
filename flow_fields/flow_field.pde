@@ -36,10 +36,7 @@ class Particle {
     int y = floor(pos.y / scl);
     int index = (x-1) + ((y-1) * cols);
     // current index
-    index = index - 1;
-    if (index > vectors.length || index < 0) {
-      index = vectors.length - 1;
-    }
+    index = abs((index - 1) % vectors.length);
 
     PVector force = vectors[index];
     applyForce(force);
@@ -107,6 +104,7 @@ void setup() {
     particles[i] = new Particle();
   }
 
+  // collision matrix
   colls = new boolean[cols*rows];
   for (int i = 0; i < cols*rows -1; i++) {
     colls[i] = false;
