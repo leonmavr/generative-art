@@ -1,17 +1,17 @@
 // Original by Daniel Shiffman
 
+
 //------------------------------------------------------------------------
-float inc = 0.01;
-int scl = 10; // quantises the 2D space
-float zoff = 0;
+// Particle class
+//------------------------------------------------------------------------
 
 int cols;
 int rows;
 
+int scl = 10;
 int noOfPoints = 400;
-
 Particle[] particles = new Particle[noOfPoints];
-PVector[] flowField;
+//PVector[] flowField;
 boolean [] colls;
 
 
@@ -28,7 +28,7 @@ class Particle {
   public void update(PVector[] vectors) {
     vel.add(acc);
     vel.limit(maxSpeed);
-    
+
     // previous position
     int x = floor(pos.x / scl);
     int y = floor(pos.y / scl);
@@ -49,7 +49,7 @@ class Particle {
     if (indexNew != index) {
       colls[index] = true;
     }
-    
+
     acc.mult(0);
   }
 
@@ -100,9 +100,102 @@ class Particle {
   }
 }
 
+
+
 //------------------------------------------------------------------------
+// Flow field class
+//------------------------------------------------------------------------
+class FlowField {
+  int nPoints;
+  float scale;
+  float zinc;
+  float xyinc;
+  int rows, cols;
+  PVector[] flowField;
+  float force;
+
+  FlowField() {
+    nPoints = 800;
+    scale = 10.0;
+    xyinc = 0.01;
+    zinc = xyinc / 50.0;
+    cols = floor(width/scale);
+    rows = floor(height/scale);
+    flowField = new PVector[(cols*rows)];
+    force = 0.1;
+  }
+
+  FlowField(int nPoints_) {
+    nPoints = nPoints_;
+    scale = 10.0;
+    xyinc = 0.01;
+    zinc = xyinc / 50.0;
+    cols = floor(width/scale);
+    rows = floor(height/scale);
+    flowField = new PVector[(cols*rows)];
+    force = 0.1;
+  }
+
+  FlowField(int nPoints_, float scale_) {
+    nPoints = nPoints_;
+    scale = scale_;
+    xyinc = 0.01;
+    zinc = xyinc / 50.0;
+    cols = floor(width/scale);
+    rows = floor(height/scale);
+    flowField = new PVector[(cols*rows)];
+    force = 0.1;
+  }
+
+  FlowField(int nPoints_, float scale_, float xyinc_) {
+    nPoints = nPoints_;
+    scale = scale_;
+    xyinc = xyinc_;
+    zinc = xyinc / 50.0;
+    cols = floor(width/scale);
+    rows = floor(height/scale);
+    flowField = new PVector[(cols*rows)];
+    force = 0.1;
+  }
+
+  FlowField(int nPoints_, float scale_, float xyinc_, float force_) {
+    nPoints = nPoints_;
+    scale = scale_;
+    xyinc = xyinc_;
+    zinc = xyinc / 50.0;
+    cols = floor(width/scale);
+    rows = floor(height/scale);
+    flowField = new PVector[(cols*rows)];
+    force = force_;
+  }
+
+  public void create(int seed_) {
+    noiseSeed(seed_);
+
+    float yoff = 0;
+    float zoff = 0;
+    for (int y = 0; y < rows; y++) {
+      float xoff = 0;
+      for (int x = 0; x < cols; x++) {
+        int index = (x + y * cols);
+
+        float angle = noise(xoff, yoff, zoff) * 2 * TWO_PI;
+        PVector v = PVector.fromAngle(angle);
+        v.setMag(force);
+        flowField[index] = v;
+        xoff = xoff + xyinc;
+      }
+      yoff = yoff + xyinc;
+    }
+    zoff = zoff + zinc;
+  }
+}
 
 
+
+//------------------------------------------------------------------------
+// Setup and main
+//------------------------------------------------------------------------
 void setup() {
   size(1000, 760, P2D);
   orientation(LANDSCAPE);
@@ -113,7 +206,6 @@ void setup() {
   cols = floor(width/scl);
   rows = floor(height/scl);
 
-  flowField = new PVector[(cols*rows)];
   for (int i = 0; i < noOfPoints; i++) {
     particles[i] = new Particle();
   }
@@ -125,28 +217,16 @@ void setup() {
   }
 }
 
+
+
 void draw() {
   fill(0);
-
-  float yoff = 0;
-  for (int y = 0; y < rows; y++) {
-    float xoff = 0;
-    for (int x = 0; x < cols; x++) {
-      int index = (x + y * cols);
-
-      float angle = noise(xoff, yoff, zoff) * 2 * TWO_PI;
-      PVector v = PVector.fromAngle(angle);
-      v.setMag(1);
-      flowField[index] = v;
-      xoff = xoff + inc;
-    }
-    yoff = yoff + inc;
-  }
-  zoff = zoff + (inc / 50);
+  FlowField flowField = new FlowField();
+  flowField.create(420);
 
   for (int i = 0; i < particles.length; i++) {
-    particles[i].follow(flowField);
-    particles[i].update(flowField);
+    particles[i].follow(flowField.flowField);
+    particles[i].update(flowField.flowField);
     particles[i].edges();
     particles[i].show();
     particles[i].updatePrev();
