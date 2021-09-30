@@ -2,13 +2,13 @@
 
 //------------------------------------------------------------------------
 float inc = 0.01;
-int scl = 20; // quantises the 2D space
+int scl = 10; // quantises the 2D space
 float zoff = 0;
 
 int cols;
 int rows;
 
-int noOfPoints = 1000;
+int noOfPoints = 400;
 
 Particle[] particles = new Particle[noOfPoints];
 PVector[] flowField;
@@ -20,7 +20,7 @@ class Particle {
   PVector vel = new PVector(0, 0);
   PVector acc = new PVector(0, 0);
   float maxSpeed = 0.5;
-  boolean drawThis = true;
+  boolean dead = false;
 
   PVector prevPos = pos.copy();
 
@@ -28,31 +28,28 @@ class Particle {
   public void update(PVector[] vectors) {
     vel.add(acc);
     vel.limit(maxSpeed);
-    //--->
+    
+    // previous position
     int x = floor(pos.x / scl);
     int y = floor(pos.y / scl);
     int index = (x-1) + ((y-1) * cols);
-    // current index
     index = abs((index - 1) % vectors.length);
     if (colls[index] == true) {
-      println("x");
+      dead = true;
       return;
     }
-    println("before: ", index);
-    //<---
+
+    // updated position
     pos.add(vel);
-    //--->
     x = floor(pos.x / scl);
     y = floor(pos.y / scl);
-    int index2 = (x-1) + ((y-1) * cols);
+    int indexNew = (x-1) + ((y-1) * cols);
     // current index
-    index2 = abs((index2 - 1) % vectors.length);
-    println("after: ", index2);
-    if (index2 != index) {
+    indexNew = abs((indexNew - 1) % vectors.length);
+    if (indexNew != index) {
       colls[index] = true;
-      println("*");
     }
-    //<---
+    
     acc.mult(0);
   }
 
@@ -72,14 +69,9 @@ class Particle {
   }
 
   public void show() {
-    if (drawThis == false) {
-      return;
-    } else {
-      stroke(255);
-      strokeWeight(6);
-      //point(pos.x, pos.y);
-      line(prevPos.x, prevPos.y, pos.x, pos.y);
-    }
+    stroke(255);
+    strokeWeight(6);
+    line(prevPos.x, prevPos.y, pos.x, pos.y);
   }
 
   public void updatePrev() {
@@ -109,9 +101,6 @@ class Particle {
 }
 
 //------------------------------------------------------------------------
-
-
-
 
 
 void setup() {
