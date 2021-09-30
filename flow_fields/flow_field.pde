@@ -2,7 +2,7 @@
 
 //------------------------------------------------------------------------
 float inc = 0.01;
-int scl = 2; // quantises the 2D space
+int scl = 20; // quantises the 2D space
 float zoff = 0;
 
 int cols;
@@ -24,10 +24,35 @@ class Particle {
 
   PVector prevPos = pos.copy();
 
-  public void update() {
+
+  public void update(PVector[] vectors) {
     vel.add(acc);
     vel.limit(maxSpeed);
+    //--->
+    int x = floor(pos.x / scl);
+    int y = floor(pos.y / scl);
+    int index = (x-1) + ((y-1) * cols);
+    // current index
+    index = abs((index - 1) % vectors.length);
+    if (colls[index] == true) {
+      println("x");
+      return;
+    }
+    println("before: ", index);
+    //<---
     pos.add(vel);
+    //--->
+    x = floor(pos.x / scl);
+    y = floor(pos.y / scl);
+    int index2 = (x-1) + ((y-1) * cols);
+    // current index
+    index2 = abs((index2 - 1) % vectors.length);
+    println("after: ", index2);
+    if (index2 != index) {
+      colls[index] = true;
+      println("*");
+    }
+    //<---
     acc.mult(0);
   }
 
@@ -132,7 +157,7 @@ void draw() {
 
   for (int i = 0; i < particles.length; i++) {
     particles[i].follow(flowField);
-    particles[i].update();
+    particles[i].update(flowField);
     particles[i].edges();
     particles[i].show();
     particles[i].updatePrev();
