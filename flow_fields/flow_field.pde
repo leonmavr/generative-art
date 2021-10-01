@@ -17,17 +17,45 @@ boolean [] colls;
 
 class Particle {
   PVector pos = new PVector(random(width), random(height));
+  PVector prevPos = pos.copy();
   PVector vel = new PVector(0, 0);
   PVector acc = new PVector(0, 0);
-  float maxSpeed = 0.5;
-  boolean dead = false;
+  float m_maxSpeed = 0.5;
 
-  PVector prevPos = pos.copy();
+  boolean m_detectCollisions = true;
+  boolean dead = false;
+  color m_colorFill = #ffffff, m_colorStroke = 0xffffff;
+  float m_lineWidth = 4.0, m_strokeWidth = 4.0;
+
+  Particle() {
+  }
+
+  Particle(float linewidth) {
+    m_lineWidth = linewidth;
+  }
+
+  Particle(float linewidth, boolean detectCollisions) {
+    m_lineWidth = linewidth;  
+    m_detectCollisions = detectCollisions;
+  }
+
+  Particle(float linewidth, boolean detectCollisions, float maxSpeed ) {
+    m_lineWidth = linewidth;  
+    m_detectCollisions = detectCollisions;
+    m_maxSpeed = maxSpeed;
+  }
+
+  Particle(float linewidth, boolean detectCollisions, color colorFill, color colorStroke) {
+    m_lineWidth = linewidth;  
+    m_detectCollisions = detectCollisions;
+    m_colorFill = colorFill;
+    m_colorStroke = colorStroke;
+  }
 
 
   public void update(PVector[] vectors) {
     vel.add(acc);
-    vel.limit(maxSpeed);
+    vel.limit(m_maxSpeed);
 
     // previous position
     int x = floor(pos.x / scl);
@@ -69,9 +97,20 @@ class Particle {
   }
 
   public void show() {
-    stroke(255);
-    strokeWeight(6);
-    line(prevPos.x, prevPos.y, pos.x, pos.y);
+    stroke(m_colorStroke);
+    strokeWeight(m_strokeWidth);
+    fill(m_colorFill);
+    pushMatrix();
+    beginShape();
+    float x0 = prevPos.x, y0 = prevPos.y, x1 = pos.x, y1 = pos.y;
+    float w = m_lineWidth/2;
+    vertex(x0-w, y0-w);
+    vertex(x0-w, y0+w);
+    vertex(x1+w, y1+w);
+    vertex(x1+w, y1-w);
+    endShape(CLOSE);
+    popMatrix();
+    //line(prevPos.x, prevPos.y, pos.x, pos.y);
   }
 
   public void updatePrev() {
@@ -108,8 +147,9 @@ class Particle {
 class FlowField {
   int nPoints;
   float scale;
-  float zinc;
   float xyinc;
+  float zinc = xyinc/50.0;
+
   int rows, cols;
   PVector[] flowField;
   float force;
@@ -189,6 +229,14 @@ class FlowField {
     }
     zoff = zoff + zinc;
   }
+}
+
+
+//------------------------------------------------------------------------
+// ParticleLayer class
+//------------------------------------------------------------------------
+class ParticleLayer {
+  // TODO:   follow flow field and draw
 }
 
 
