@@ -23,7 +23,7 @@ class Particle {
   float m_maxSpeed = 0.5;
 
   boolean m_detectCollisions = true;
-  boolean dead = false;
+  boolean m_dead = false;
   color m_colorFill = #ffffff, m_colorStroke = 0xffffff;
   float m_lineWidth = 4.0, m_strokeWidth = 4.0;
 
@@ -52,6 +52,24 @@ class Particle {
     m_colorStroke = colorStroke;
   }
 
+  Particle(float linewidth, boolean detectCollisions, color colorFill, color colorStroke, float lineWidth) {
+    m_lineWidth = linewidth;  
+    m_detectCollisions = detectCollisions;
+    m_colorFill = colorFill;
+    m_colorStroke = colorStroke;
+    m_lineWidth = lineWidth;
+  }
+    
+  Particle(float linewidth, boolean detectCollisions, color colorFill, color colorStroke, float lineWidth, float strokeWidth) {
+    m_lineWidth = linewidth;  
+    m_detectCollisions = detectCollisions;
+    m_colorFill = colorFill;
+    m_colorStroke = colorStroke;
+    m_lineWidth = lineWidth;
+    m_strokeWidth = strokeWidth;
+  }
+
+
 
   public void update(PVector[] vectors) {
     vel.add(acc);
@@ -62,8 +80,8 @@ class Particle {
     int y = floor(pos.y / scl);
     int index = (x-1) + ((y-1) * cols);
     index = abs((index - 1) % vectors.length);
-    if (colls[index] == true) {
-      dead = true;
+    if ((m_detectCollisions) && (colls[index] == true)) {
+      m_dead = true;
       return;
     }
 
@@ -145,35 +163,23 @@ class Particle {
 // Flow field class
 //------------------------------------------------------------------------
 class FlowField {
-  int nPoints;
-  float scale;
-  float xyinc;
-  float zinc = xyinc/50.0;
+  int nPoints = 800;
+  float scale = 10.0;
+  float xyinc = 0.01;
+  float zinc = 0.01/50.0;
 
-  int rows, cols;
+  int rows = floor(height/scale), cols = floor(width/scale);
   PVector[] flowField;
-  float force;
+  float force = 0.1;
 
   FlowField() {
-    nPoints = 800;
-    scale = 10.0;
-    xyinc = 0.01;
-    zinc = xyinc / 50.0;
-    cols = floor(width/scale);
-    rows = floor(height/scale);
+
     flowField = new PVector[(cols*rows)];
-    force = 0.1;
   }
 
   FlowField(int nPoints_) {
     nPoints = nPoints_;
-    scale = 10.0;
-    xyinc = 0.01;
-    zinc = xyinc / 50.0;
-    cols = floor(width/scale);
-    rows = floor(height/scale);
     flowField = new PVector[(cols*rows)];
-    force = 0.1;
   }
 
   FlowField(int nPoints_, float scale_) {
