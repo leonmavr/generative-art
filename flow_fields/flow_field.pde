@@ -24,7 +24,8 @@ class Particle {
 
   boolean m_detectCollisions = true;
   boolean m_dead = false;
-  color m_colorFill = #ffffff, m_colorStroke = 0xffffff;
+  color col = color(random(300, 400), 400, 400);
+  color m_colorFill = col, m_colorStroke = col;
   float m_lineWidth = 4.0, m_strokeWidth = 4.0;
 
   Particle() {
@@ -59,7 +60,7 @@ class Particle {
     m_colorStroke = colorStroke;
     m_lineWidth = lineWidth;
   }
-    
+
   Particle(float linewidth, boolean detectCollisions, color colorFill, color colorStroke, float lineWidth, float strokeWidth) {
     m_lineWidth = linewidth;  
     m_detectCollisions = detectCollisions;
@@ -122,6 +123,7 @@ class Particle {
     beginShape();
     float x0 = prevPos.x, y0 = prevPos.y, x1 = pos.x, y1 = pos.y;
     float w = m_lineWidth/2;
+    // TODO: smaller vertex rectangle to show stroke
     vertex(x0-w, y0-w);
     vertex(x0-w, y0+w);
     vertex(x1+w, y1+w);
@@ -253,8 +255,11 @@ class ParticleLayer {
 void setup() {
   size(1000, 760, P2D);
   orientation(LANDSCAPE);
+  colorMode(HSB, 400);
+  smooth();
 
-  background(0);
+
+  background(400);
   //hint(DISABLE_DEPTH_MASK);
 
   cols = floor(width/scl);
