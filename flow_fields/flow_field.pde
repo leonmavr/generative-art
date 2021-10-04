@@ -1,4 +1,4 @@
-// Original by Daniel Shiffman
+// Based on Daniel Shiffman's flow field series
 
 
 //------------------------------------------------------------------------
@@ -9,14 +9,14 @@ int cols;
 int rows;
 
 int scl = 10;
-int noOfPoints = 2000;
+int noOfPoints = 200;
 Particle[] particles = new Particle[noOfPoints];
 //PVector[] flowField;
 boolean [] colls;
 
 
 class Particle {
-  PVector pos = new PVector(random(-200, width + 200), random(-200, height + 200));
+  PVector pos = new PVector(random(width), random(height));
   PVector prevPos = pos.copy();
   PVector vel = new PVector(0, 0);
   PVector acc = new PVector(0, 0);
@@ -24,63 +24,65 @@ class Particle {
 
   boolean m_detectCollisions = false;
   boolean m_dead = false;
+  boolean m_collided = false;
   color col = color(random(200, 400), 400, 400, random(400));
   color m_colorFill = col, m_colorStroke = col;
   float m_lineWidth = 4.0, m_strokeWidth = 4.0;
   int m_lifetime = 0; // lifetime; if non-zero, the closer m_life is to lifetime, the thinner the curve 
   int m_life = 0;
 
+
   Particle() {
   }
-  
+
   Particle (float posx, float posy) {
-   pos = new PVector(posx, posy); 
+    pos = new PVector(posx, posy);
   }
-  
+
   Particle (float posx, float posy, float linewidth) {
-   pos = new PVector(posx, posy); 
-   m_lineWidth = linewidth;
+    pos = new PVector(posx, posy); 
+    m_lineWidth = linewidth;
   }
-  
+
   Particle (float posx, float posy, float linewidth, int lifetime) {
-   pos = new PVector(posx, posy); 
-   m_lineWidth = linewidth;
-   m_lifetime = lifetime;
+    pos = new PVector(posx, posy); 
+    m_lineWidth = linewidth;
+    m_lifetime = lifetime;
   }
 
   Particle (float posx, float posy, float linewidth, int lifetime, boolean detectCollisions) {
-   pos = new PVector(posx, posy); 
-   m_lineWidth = linewidth;
-   m_lifetime = lifetime;
-   m_detectCollisions = detectCollisions;
+    pos = new PVector(posx, posy); 
+    m_lineWidth = linewidth;
+    m_lifetime = lifetime;
+    m_detectCollisions = detectCollisions;
   }
 
   Particle (float posx, float posy, float linewidth, int lifetime, boolean detectCollisions, float maxSpeed) {
-   pos = new PVector(posx, posy); 
-   m_lineWidth = linewidth;
-   m_lifetime = lifetime;
-   m_detectCollisions = detectCollisions;
-   m_maxSpeed = maxSpeed;
+    pos = new PVector(posx, posy); 
+    m_lineWidth = linewidth;
+    m_lifetime = lifetime;
+    m_detectCollisions = detectCollisions;
+    m_maxSpeed = maxSpeed;
   } 
- 
+
   Particle (float posx, float posy, float linewidth, int lifetime, boolean detectCollisions, float maxSpeed, color colorFill) {
-   pos = new PVector(posx, posy); 
-   m_lineWidth = linewidth;
-   m_lifetime = lifetime;
-   m_detectCollisions = detectCollisions;
-   m_maxSpeed = maxSpeed;
-   m_colorFill = colorFill;
+    pos = new PVector(posx, posy); 
+    m_lineWidth = linewidth;
+    m_lifetime = lifetime;
+    m_detectCollisions = detectCollisions;
+    m_maxSpeed = maxSpeed;
+    m_colorFill = colorFill;
   }
 
   Particle (float posx, float posy, float linewidth, int lifetime, boolean detectCollisions, float maxSpeed, color colorFill, float strokeWidth, color colorStroke) {
-   pos = new PVector(posx, posy); 
-   m_lineWidth = linewidth;
-   m_lifetime = lifetime;
-   m_detectCollisions = detectCollisions;
-   m_maxSpeed = maxSpeed;
-   m_colorFill = colorFill;
-   m_strokeWidth = strokeWidth;
-   m_colorStroke = colorStroke;
+    pos = new PVector(posx, posy); 
+    m_lineWidth = linewidth;
+    m_lifetime = lifetime;
+    m_detectCollisions = detectCollisions;
+    m_maxSpeed = maxSpeed;
+    m_colorFill = colorFill;
+    m_strokeWidth = strokeWidth;
+    m_colorStroke = colorStroke;
   }
 
 
@@ -94,12 +96,12 @@ class Particle {
     int index = (x-1) + ((y-1) * cols);
     index = abs((index - 1) % vectors.length);
     if ((m_detectCollisions) && (colls[index] == true)) {
-      m_dead = true;
+      m_collided = true;
       return;
     }
-    
+
     pos.add(vel);
-    
+
     // updated position
     x = floor(pos.x / scl);
     y = floor(pos.y / scl);
@@ -111,9 +113,9 @@ class Particle {
     }
 
     acc.mult(0);
-    
+
     // update lifetime
-    m_life++;
+    m_life = (m_life < m_lifetime) ? m_life+1 : m_life;
   }
 
   public void follow(PVector[] vectors) {
@@ -132,25 +134,28 @@ class Particle {
   }
 
   public void show() {
-    //stroke(m_colorStroke);
-    //strokeWeight(m_strokeWidth);
-    noStroke();
+    if (m_collided == true) {
+      return;
+    }
+    stroke(m_colorFill);
     fill(m_colorFill);
-    pushMatrix();
-    beginShape(TRIANGLE_FAN);
+    //pushMatrix();
+    //beginShape();
     float x0 = prevPos.x, y0 = prevPos.y, x1 = pos.x, y1 = pos.y;
     float w = m_lineWidth/2;
     if (m_lifetime != 0) {
       float finalLife = max(m_lifetime - m_life, 0);
-      w = m_lineWidth - sin((0-finalLife)/m_lifetime) * (0 - m_lineWidth);
-      //println("width: ", w);
+      w = m_lineWidth + (finalLife - m_life)/m_life * (0 - m_lineWidth);
     }
-    vertex(x0-w, y0-w);
-    vertex(x0-w, y0+w);
-    vertex(x1+w, y1+w);
-    vertex(x1+w, y1-w);
-    endShape(CLOSE);
-    popMatrix();
+    // TODO: smaller vertex rectangle to show stroke
+    //vertex(x0-w, y0-w);
+    //vertex(x0-w, y0+w);
+    //vertex(x1+w, y1+w);
+    //vertex(x1+w, y1-w);
+    //endShape(CLOSE);
+    //popMatrix();
+    strokeWeight(2);
+    line(x0, y0, x1, y1);
   }
 
   public void updatePrev() {
@@ -207,12 +212,9 @@ class FlowField {
   FlowField(int nPoints_, float scale_) {
     nPoints = nPoints_;
     scale = scale_;
-    xyinc = 0.01;
-    zinc = xyinc / 50.0;
     cols = floor(width/scale);
     rows = floor(height/scale);
     flowField = new PVector[(cols*rows)];
-    force = 0.1;
   }
 
   FlowField(int nPoints_, float scale_, float xyinc_) {
@@ -223,7 +225,6 @@ class FlowField {
     cols = floor(width/scale);
     rows = floor(height/scale);
     flowField = new PVector[(cols*rows)];
-    force = 0.1;
   }
 
   FlowField(int nPoints_, float scale_, float xyinc_, float force_) {
@@ -246,7 +247,6 @@ class FlowField {
       float xoff = 0;
       for (int x = 0; x < cols; x++) {
         int index = (x + y * cols);
-
         float angle = noise(xoff, yoff, zoff) * 2 * TWO_PI;
         PVector v = PVector.fromAngle(angle);
         v.setMag(force);
@@ -279,7 +279,7 @@ void setup() {
   smooth();
 
 
-  background(360);
+  background(400);
   //hint(DISABLE_DEPTH_MASK);
 
   cols = floor(width/scl);
@@ -287,11 +287,11 @@ void setup() {
 
   for (int i = 0; i < noOfPoints; i++) {
     particles[i] = new Particle();
-    particles[i].m_lifetime = 800;
-    particles[i].m_lineWidth = 10;
+    particles[i].m_detectCollisions = true;
+    particles[i].m_lifetime = 20;
   }
 
-  // collision matrix
+  // initialise collision matrix
   colls = new boolean[cols*rows];
   for (int i = 0; i < cols*rows -1; i++) {
     colls[i] = false;
@@ -303,7 +303,7 @@ void setup() {
 void draw() {
   //fill(0);
   FlowField flowField = new FlowField();
-  flowField.create(42);
+  flowField.create(421);
 
   for (int i = 0; i < particles.length; i++) {
     particles[i].follow(flowField.flowField);
