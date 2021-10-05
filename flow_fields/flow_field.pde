@@ -9,7 +9,7 @@ int cols;
 int rows;
 
 int scl = 10;
-int noOfPoints = 400;
+int noOfPoints = 4000;
 Particle[] particles = new Particle[noOfPoints];
 //PVector[] flowField;
 boolean [] colls;
@@ -30,6 +30,7 @@ class Particle {
   float m_lineWidth = 4.0, m_strokeWidth = 4.0;
   int m_lifetime = 0; // lifetime; if non-zero, the closer m_life is to lifetime, the thinner the curve 
   int m_life = 0;
+  float m_invisible = 0; // how many initial frames line will remain invisible (not drawn) for - 0 to 1
 
 
   Particle() {
@@ -91,6 +92,12 @@ class Particle {
     m_strokeWidth = strokeWidth;
     m_colorStroke = colorStroke;
   }
+  
+  public void setInvisible(float lifetimeFraction) {
+    if (m_lifetime != 0) {
+     m_invisible = round(lifetimeFraction * m_lifetime); 
+    }
+  }
 
 
   public void update(PVector[] vectors) {
@@ -141,9 +148,20 @@ class Particle {
   }
 
   public void show() {
+    // exit conditions
+    // 1. collision
     if (m_collided == true) {
       return;
     }
+    // 2. invisibility as set by the user
+    if ((m_lifetime * m_invisible != 0) && (m_life < m_invisible * m_lifetime)){
+     return; 
+    }
+    // 3. life span exceeded
+    if (m_life >= m_lifetime) {
+     return; 
+    }
+    
     stroke(m_colorFill);
     fill(m_colorFill);
 
@@ -277,7 +295,6 @@ void setup() {
   colorMode(HSB, 400);
   smooth();
 
-
   background(400);
   //hint(DISABLE_DEPTH_MASK);
 
@@ -287,7 +304,9 @@ void setup() {
   for (int i = 0; i < noOfPoints; i++) {
     particles[i] = new Particle();
     particles[i].m_detectCollisions = false;
-    particles[i].m_lifetime = 20;
+    particles[i].m_lifetime = 5000;
+    particles[i].m_invisible = 0.4;
+    particles[i].m_strokeWidth  = 20;
   }
 
   // initialise collision matrix
