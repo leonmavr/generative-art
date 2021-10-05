@@ -9,7 +9,7 @@ int cols;
 int rows;
 
 int scl = 10;
-int noOfPoints = 4000;
+int noOfPoints = 1000;
 Particle[] particles = new Particle[noOfPoints];
 //PVector[] flowField;
 boolean [] colls;
@@ -31,6 +31,7 @@ class Particle {
   int m_lifetime = 0; // lifetime; if non-zero, the closer m_life is to lifetime, the thinner the curve 
   int m_life = 0;
   float m_invisible = 0; // how many initial frames line will remain invisible (not drawn) for - 0 to 1
+  boolean m_useRectangles = false;
 
 
   Particle() {
@@ -92,10 +93,10 @@ class Particle {
     m_strokeWidth = strokeWidth;
     m_colorStroke = colorStroke;
   }
-  
+
   public void setInvisible(float lifetimeFraction) {
     if (m_lifetime != 0) {
-     m_invisible = round(lifetimeFraction * m_lifetime); 
+      m_invisible = round(lifetimeFraction * m_lifetime);
     }
   }
 
@@ -154,14 +155,14 @@ class Particle {
       return;
     }
     // 2. invisibility as set by the user
-    if ((m_lifetime * m_invisible != 0) && (m_life < m_invisible * m_lifetime)){
-     return; 
+    if ((m_lifetime * m_invisible != 0) && (m_life < m_invisible * m_lifetime)) {
+      return;
     }
     // 3. life span exceeded
     if (m_life >= m_lifetime) {
-     return; 
+      return;
     }
-    
+
     stroke(m_colorFill);
     fill(m_colorFill);
 
@@ -170,9 +171,24 @@ class Particle {
     if (m_lifetime != 0) {
       float finalLife = max(m_lifetime - m_life, 0);
       w = m_lineWidth + (finalLife - m_life)/m_life * (0 - m_lineWidth);
+      w = 8; // TODO
     }
-    strokeWeight(2);
-    line(x0, y0, x1, y1);
+    strokeWeight(w);
+    if (!m_useRectangles) {
+      line(x0, y0, x1, y1);
+    } else {
+      //stroke(400);
+      //strokeWeight(0.5);
+      pushMatrix();
+      beginShape();
+      translate(x1, y1);
+      vertex(-w/2, -w/2);
+      vertex(0, -w/2);
+      vertex(0, 0);
+      vertex(-w/2, 0);
+      endShape(CLOSE);
+      popMatrix();
+    }
   }
 
   public void updatePrev() {
@@ -302,11 +318,13 @@ void setup() {
   rows = floor(height/scl);
 
   for (int i = 0; i < noOfPoints; i++) {
-    particles[i] = new Particle();
+    particles[i] = new Particle(random(100, 200), random(100, 200));
     particles[i].m_detectCollisions = false;
-    particles[i].m_lifetime = 5000;
-    particles[i].m_invisible = 0.4;
-    particles[i].m_strokeWidth  = 20;
+    particles[i].m_lifetime = 500;
+    particles[i].m_invisible = 0.01;
+    particles[i].m_useRectangles = true;
+    particles[i].m_colorFill = color(300,400,round(random(0,1))*400,400);
+    particles[i].m_maxSpeed = 4;
   }
 
   // initialise collision matrix
@@ -322,6 +340,7 @@ void draw() {
   //fill(0);
   FlowField flowField = new FlowField();
   flowField.create(421);
+  flowField.force = 1;
 
   for (int i = 0; i < particles.length; i++) {
     particles[i].follow(flowField.flowField);
