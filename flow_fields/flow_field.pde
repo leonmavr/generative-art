@@ -8,10 +8,9 @@
 int cols;
 int rows;
 
-int scl = 10;
-int noOfPoints = 1000;
+int scl = 20;
+int noOfPoints = 70;
 Particle[] particles = new Particle[noOfPoints];
-//PVector[] flowField;
 boolean [] colls;
 
 
@@ -20,7 +19,7 @@ class Particle {
   PVector prevPos = pos.copy();
   PVector vel = new PVector(0, 0);
   PVector acc = new PVector(0, 0);
-  float m_maxSpeed = 0.5;
+  float m_maxSpeed = 0.4;
 
   boolean m_detectCollisions = false;
   boolean m_dead = false;
@@ -32,6 +31,8 @@ class Particle {
   int m_life = 0;
   float m_invisible = 0; // how many initial frames line will remain invisible (not drawn) for - 0 to 1
   boolean m_useRectangles = false;
+  float m_witdthInit = 4.0, m_widthFinal = 4.0; // line width of Pelin noise lines
+  color m_colorInit = col, m_colorFinal = col; // line colour in between is interpolated
 
 
   Particle() {
@@ -162,9 +163,9 @@ class Particle {
     if (m_life >= m_lifetime) {
       return;
     }
-
-    stroke(m_colorFill);
-    fill(m_colorFill);
+    //println((float)m_life/m_lifetime);
+    stroke(lerpColor(m_colorInit, m_colorFinal, (float)m_life/m_lifetime));
+    fill(lerpColor(m_colorInit, m_colorFinal, (float)m_life/m_lifetime));
 
     float x0 = prevPos.x, y0 = prevPos.y, x1 = pos.x, y1 = pos.y;
     float w = m_lineWidth/2;
@@ -224,9 +225,9 @@ class Particle {
 //------------------------------------------------------------------------
 class FlowField {
   int nPoints = 800;
-  float scale = 10.0;
-  float xyinc = 0.01;
-  float zinc = 0.01/50.0;
+  float scale = scl;
+  float xyinc = 0.04;
+  float zinc = 0.04/40.0;
 
   int rows = floor(height/scale), cols = floor(width/scale);
   PVector[] flowField;
@@ -270,7 +271,7 @@ class FlowField {
     flowField = new PVector[(cols*rows)];
     force = force_;
   }
-
+ 
   public void create(int seed_) {
     noiseSeed(seed_);
 
@@ -318,13 +319,15 @@ void setup() {
   rows = floor(height/scl);
 
   for (int i = 0; i < noOfPoints; i++) {
-    particles[i] = new Particle(random(100, 200), random(100, 200));
-    particles[i].m_detectCollisions = false;
+    particles[i] = new Particle(random(100,800), random(100,800));
+    particles[i].m_detectCollisions = true;
     particles[i].m_lifetime = 500;
-    particles[i].m_invisible = 0.01;
-    particles[i].m_useRectangles = true;
-    particles[i].m_colorFill = color(300,400,round(random(0,1))*400,400);
-    particles[i].m_maxSpeed = 4;
+    particles[i].m_invisible = 0.05;
+    particles[i].m_useRectangles = false;
+    particles[i].m_colorFill = color(300,400,300+round(random(0,1))*100,400);
+    particles[i].m_colorInit = color(100,400,400,200);
+    particles[i].m_colorFinal = color(300,400,400,200);
+    //particles[i].m_maxSpeed = 2;
   }
 
   // initialise collision matrix
@@ -340,7 +343,7 @@ void draw() {
   //fill(0);
   FlowField flowField = new FlowField();
   flowField.create(421);
-  flowField.force = 1;
+  flowField.force = 0.1;
 
   for (int i = 0; i < particles.length; i++) {
     particles[i].follow(flowField.flowField);
