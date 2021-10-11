@@ -137,7 +137,7 @@ class Particle {
     int y = floor(pos.y / scl);
     int index = (x-1) + ((y-1) * cols);
     // current index
-    
+
     index = abs((index - 1) % vectors.length);
 
     PVector force = vectors[index];
@@ -225,6 +225,11 @@ class Particle {
 //------------------------------------------------------------------------
 // Flow field class
 //------------------------------------------------------------------------
+enum FlowFieldDirection {
+  RANDOM, VERTICAL, HORIZONTAL
+};
+
+
 class FlowField {
   int nPoints = 800;
   float scale = scl;
@@ -234,6 +239,7 @@ class FlowField {
   int rows = floor(height/scale), cols = floor(width/scale);
   PVector[] flowField;
   float force = 0.1;
+  FlowFieldDirection direction = FlowFieldDirection.VERTICAL;
 
   FlowField() {
 
@@ -273,7 +279,7 @@ class FlowField {
     flowField = new PVector[(cols*rows)];
     force = force_;
   }
- 
+
   public void create(int seed_) {
     noiseSeed(seed_);
 
@@ -283,7 +289,14 @@ class FlowField {
       float xoff = 0;
       for (int x = 0; x < cols; x++) {
         int index = (x + y * cols);
-        float angle = noise(xoff, yoff, zoff) * 2 * TWO_PI + 2*TWO_PI*sin(10*index/(1.0*width*height));
+        float angle = 0.0;
+        if (direction == FlowFieldDirection.HORIZONTAL) {
+          angle = noise(xoff, yoff, zoff) * 2 * TWO_PI + 2*TWO_PI*sin(0.015*index/float(rows));
+        } else if (direction == FlowFieldDirection.VERTICAL) {
+          angle = noise(xoff, yoff, zoff) * 2 * TWO_PI + 2*TWO_PI*sin(0.015*index/float(cols));
+        } else {
+          angle = noise(xoff, yoff, zoff) * 2 * TWO_PI;
+        }
         PVector v = PVector.fromAngle(angle);
         v.setMag(force);
         flowField[index] = v;
@@ -309,7 +322,7 @@ class ParticleLayer {
 // Setup and main
 //------------------------------------------------------------------------
 void setup() {
-  size(1000, 760, P2D);
+  size(1280, 1080, P2D);
   orientation(LANDSCAPE);
   colorMode(HSB, 400);
   smooth();
@@ -321,15 +334,15 @@ void setup() {
   rows = floor(height/scl);
 
   for (int i = 0; i < noOfPoints; i++) {
-    particles[i] = new Particle(random(100,300), random(100,300));
+    particles[i] = new Particle(random(500, 800), random(500, 600));
     particles[i].m_detectCollisions = false;
-    particles[i].m_lifetime = 2000;
-    particles[i].m_invisible = 0.001;
+    particles[i].m_lifetime = 1000;
+    particles[i].m_invisible = 0.003;
     particles[i].m_useRectangles = false;
-    particles[i].m_colorInit = color(200,400,400,200);
-    particles[i].m_colorFinal = color(300,400,400,200);
-    particles[i].m_widthInit = 20;
-    particles[i].m_widthFinal = 2;
+    particles[i].m_colorInit = color(200, 400, 400, 350);
+    particles[i].m_colorFinal = color(250, 400, 400, 350);
+    particles[i].m_widthInit = 25;
+    particles[i].m_widthFinal = 4;
     //particles[i].m_maxSpeed = 2;
   }
 
@@ -355,5 +368,4 @@ void draw() {
     particles[i].show();
     particles[i].updatePrev();
   }
-
 }
