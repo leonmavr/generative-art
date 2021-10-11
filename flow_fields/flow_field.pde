@@ -9,7 +9,7 @@ int cols;
 int rows;
 
 int scl = 20;
-int noOfPoints = 70;
+int noOfPoints = 700;
 Particle[] particles = new Particle[noOfPoints];
 boolean [] colls;
 
@@ -25,13 +25,13 @@ class Particle {
   boolean m_dead = false;
   boolean m_collided = false;
   color col = color(random(200, 400), 400, 400, random(400));
-  color m_colorFill = col, m_colorStroke = col;
+  color m_colorStroke = col;
   float m_lineWidth = 4.0, m_strokeWidth = 4.0;
   int m_lifetime = 0; // lifetime; if non-zero, the closer m_life is to lifetime, the thinner the curve 
   int m_life = 0;
   float m_invisible = 0; // how many initial frames line will remain invisible (not drawn) for - 0 to 1
   boolean m_useRectangles = false;
-  float m_witdthInit = 4.0, m_widthFinal = 4.0; // line width of Pelin noise lines
+  float m_widthInit = 4.0, m_widthFinal = 4.0; // line width of Pelin noise lines
   color m_colorInit = col, m_colorFinal = col; // line colour in between is interpolated
 
 
@@ -80,7 +80,6 @@ class Particle {
     m_lifetime = lifetime;
     m_detectCollisions = detectCollisions;
     m_maxSpeed = maxSpeed;
-    m_colorFill = colorFill;
   }
 
   Particle (float posx, float posy, float linewidth, int lifetime, boolean detectCollisions, float maxSpeed, color colorFill, float strokeWidth, color colorStroke) {
@@ -90,7 +89,6 @@ class Particle {
     m_lifetime = lifetime;
     m_detectCollisions = detectCollisions;
     m_maxSpeed = maxSpeed;
-    m_colorFill = colorFill;
     m_strokeWidth = strokeWidth;
     m_colorStroke = colorStroke;
   }
@@ -139,6 +137,7 @@ class Particle {
     int y = floor(pos.y / scl);
     int index = (x-1) + ((y-1) * cols);
     // current index
+    
     index = abs((index - 1) % vectors.length);
 
     PVector force = vectors[index];
@@ -171,8 +170,11 @@ class Particle {
     float w = m_lineWidth/2;
     if (m_lifetime != 0) {
       float finalLife = max(m_lifetime - m_life, 0);
-      w = m_lineWidth + (finalLife - m_life)/m_life * (0 - m_lineWidth);
-      w = 8; // TODO
+      //w = m_lineWidth + (finalLife - m_life)/m_life * (0 - m_lineWidth);
+      //w = 8; // TODO
+      float angle = 11.0*PI/20.0 - finalLife/m_lifetime * 11.0*PI/20.0;
+      w = m_widthInit + (m_widthFinal - m_widthInit) * sin(angle);
+      println(w);
     }
     strokeWeight(w);
     if (!m_useRectangles) {
@@ -281,7 +283,7 @@ class FlowField {
       float xoff = 0;
       for (int x = 0; x < cols; x++) {
         int index = (x + y * cols);
-        float angle = noise(xoff, yoff, zoff) * 2 * TWO_PI;
+        float angle = noise(xoff, yoff, zoff) * 2 * TWO_PI + 2*TWO_PI*sin(10*index/(1.0*width*height));
         PVector v = PVector.fromAngle(angle);
         v.setMag(force);
         flowField[index] = v;
@@ -319,14 +321,15 @@ void setup() {
   rows = floor(height/scl);
 
   for (int i = 0; i < noOfPoints; i++) {
-    particles[i] = new Particle(random(100,800), random(100,800));
-    particles[i].m_detectCollisions = true;
-    particles[i].m_lifetime = 500;
-    particles[i].m_invisible = 0.05;
+    particles[i] = new Particle(random(100,300), random(100,300));
+    particles[i].m_detectCollisions = false;
+    particles[i].m_lifetime = 2000;
+    particles[i].m_invisible = 0.001;
     particles[i].m_useRectangles = false;
-    particles[i].m_colorFill = color(300,400,300+round(random(0,1))*100,400);
-    particles[i].m_colorInit = color(100,400,400,200);
+    particles[i].m_colorInit = color(200,400,400,200);
     particles[i].m_colorFinal = color(300,400,400,200);
+    particles[i].m_widthInit = 20;
+    particles[i].m_widthFinal = 2;
     //particles[i].m_maxSpeed = 2;
   }
 
@@ -343,7 +346,7 @@ void draw() {
   //fill(0);
   FlowField flowField = new FlowField();
   flowField.create(421);
-  flowField.force = 0.1;
+  flowField.force = 0.05;
 
   for (int i = 0; i < particles.length; i++) {
     particles[i].follow(flowField.flowField);
@@ -352,4 +355,5 @@ void draw() {
     particles[i].show();
     particles[i].updatePrev();
   }
+
 }
