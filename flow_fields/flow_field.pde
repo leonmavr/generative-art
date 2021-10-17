@@ -100,40 +100,7 @@ class Particle {
   }
 
 
-  public void update(PVector[] vectors) {
-    vel.add(acc);
-    vel.limit(m_maxSpeed);
-
-    // previous position
-    int x = floor(pos.x / scl);
-    int y = floor(pos.y / scl);
-    int index = (x-1) + ((y-1) * cols);
-    index = abs((index - 1) % vectors.length);
-    if ((m_detectCollisions) && (colls[index] == true)) {
-      m_collided = true;
-      return;
-    }
-
-    pos.add(vel);
-
-    // updated position
-    x = floor(pos.x / scl);
-    y = floor(pos.y / scl);
-    int indexNew = (x-1) + ((y-1) * cols);
-    // current index
-    indexNew = abs((indexNew - 1) % vectors.length);
-    if (indexNew != index) {
-      colls[index] = true;
-    }
-
-    acc.mult(0);
-
-    // update lifetime
-    m_life = (m_life < m_lifetime) ? m_life+1 : m_life;
-  }
-
-
-  public void update2(PVector[] vectors, boolean[] collisions) {
+  public void update(PVector[] vectors, boolean[] collisions) {
     vel.add(acc);
     vel.limit(m_maxSpeed);
 
@@ -434,7 +401,7 @@ class ParticleLayer {
       // apply the flow field (flowField) on each
       for (int i = 0; i < particles.length; i++) {
         m_particles[i].follow(flowField.flowField);
-        m_particles[i].update2(flowField.flowField, m_colls);
+        m_particles[i].update(flowField.flowField, m_colls);
         m_particles[i].edges();
         m_particles[i].show();
         m_particles[i].updatePrev();
@@ -476,7 +443,7 @@ void draw() {
     800, 
     false, 
     500, 
-    0.1, 
+    0.01, 
     true, 
     color(200, 400, 400, 300), 
     color(350, 400, 400, 300), 
@@ -484,5 +451,6 @@ void draw() {
     4, 
     0.5
     );
+    // important, don't forget it!
     noLoop();
 }
