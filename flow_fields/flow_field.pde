@@ -132,6 +132,45 @@ class Particle {
     m_life = (m_life < m_lifetime) ? m_life+1 : m_life;
   }
 
+
+  public void update2(PVector[] vectors, boolean[] collisions) {
+    vel.add(acc);
+    vel.limit(m_maxSpeed);
+
+    // previous position
+    int x = floor(pos.x / scl);
+    int y = floor(pos.y / scl);
+    int index = (x-1) + ((y-1) * cols);
+    index = abs((index - 1) % vectors.length);
+    if ((m_detectCollisions) && (collisions[index] == true)) {
+      m_collided = true;
+      return;
+    }
+
+    pos.add(vel);
+
+    // updated position
+    x = floor(pos.x / scl);
+    y = floor(pos.y / scl);
+    int indexNew = (x-1) + ((y-1) * cols);
+    // current index
+    indexNew = abs((indexNew - 1) % vectors.length);
+    if (indexNew != index) {
+      collisions[index] = true;
+    }
+
+
+    acc.mult(0);
+
+    // update lifetime
+    // TODO: lifetime not updated
+    if (m_life < m_lifetime) {
+      // println("---",m_life, m_lifetime);
+      m_life++;
+    }
+  }
+
+
   public void follow(PVector[] vectors) {
     int x = floor(pos.x / scl);
     int y = floor(pos.y / scl);
@@ -154,14 +193,22 @@ class Particle {
     if (m_collided == true) {
       return;
     }
-    // 2. invisibility as set by the user
-    if ((m_lifetime * m_invisible != 0) && (m_life < m_invisible * m_lifetime)) {
-      return;
-    }
-    // 3. life span exceeded
+    // 2. end of lifetime
     if (m_life >= m_lifetime) {
+    return;
+    }
+    // 3. invisibility set by the user
+    if ((m_lifetime != 0) && (m_invisible > 0.0)) {
+       if ((float)m_life/m_life < m_invisible ) {
+        return; 
+       }
+    }
+
+    if ((float)m_life/m_lifetime < m_invisible) {
+      //println((float)m_life/m_lifetime, m_invisible * m_lifetime);
       return;
     }
+
     //println((float)m_life/m_lifetime);
     stroke(lerpColor(m_colorInit, m_colorFinal, (float)m_life/m_lifetime));
     fill(lerpColor(m_colorInit, m_colorFinal, (float)m_life/m_lifetime));
@@ -170,18 +217,14 @@ class Particle {
     float w = m_lineWidth/2;
     if (m_lifetime != 0) {
       float finalLife = max(m_lifetime - m_life, 0);
-      //w = m_lineWidth + (finalLife - m_life)/m_life * (0 - m_lineWidth);
-      //w = 8; // TODO
       float angle = 11.0*PI/20.0 - finalLife/m_lifetime * 11.0*PI/20.0;
       w = m_widthInit + (m_widthFinal - m_widthInit) * sin(angle);
-      println(w);
+      //println(x0, y0, x1, y1);
     }
     strokeWeight(w);
     if (!m_useRectangles) {
       line(x0, y0, x1, y1);
     } else {
-      //stroke(400);
-      //strokeWeight(0.5);
       pushMatrix();
       beginShape();
       translate(x1, y1);
@@ -238,7 +281,7 @@ class FlowField {
 
   int rows = floor(height/scale), cols = floor(width/scale);
   PVector[] flowField;
-  float force = 0.1;
+  float force = 0.05;
   FlowFieldDirection direction = FlowFieldDirection.VERTICAL;
 
   FlowField() {
@@ -313,7 +356,92 @@ class FlowField {
 // ParticleLayer class
 //------------------------------------------------------------------------
 class ParticleLayer {
-  // TODO:   follow flow field and draw
+  int m_scl = 20;
+  int m_cols = floor(width/scl);
+  int m_rows = floor(height/scl);
+  int m_noOfPoints = 700;
+  Particle[] m_particles;
+  //boolean [] m_colls;
+  int m_seed = 420;
+  boolean[] m_colls;
+
+  ParticleLayer() {
+    FlowField m_flowField = new FlowField();
+    m_colls = new boolean[cols*rows];
+    m_particles = new Particle[m_noOfPoints];
+    m_flowField.create(m_seed);
+    for (int i = 0; i < cols*rows -1; i++) {
+      m_colls[i] = false;
+    }
+  }
+
+  ParticleLayer(int seed) {
+    FlowField m_flowField = new FlowField();
+    m_particles = new Particle[m_noOfPoints];
+    m_colls = new boolean[cols*rows];
+    m_seed = seed;
+    m_flowField.create(m_seed);
+    for (int i = 0; i < cols*rows -1; i++) {
+      m_colls[i] = false;
+    }
+  }
+
+  ParticleLayer(int seed, int nParticles) {
+    FlowField m_flowField = new FlowField();
+    m_particles = new Particle[m_noOfPoints];
+    m_colls = new boolean[cols*rows];
+    m_seed = seed;
+    m_flowField.create(m_seed);
+    for (int i = 0; i < cols*rows -1; i++) {
+      m_colls[i] = false;
+    }
+    m_noOfPoints = nParticles;
+  }
+
+  public void create(FlowField flowField, 
+    int xmin, 
+    int xmax, 
+    int ymin, 
+    int ymax, 
+    boolean detectCollisions, 
+    int lifetime, 
+    float invisible, 
+    boolean useRectangles, 
+    color colorInit, 
+    color colorFinal, 
+    float widthInit, 
+    float widthFinal, 
+    float maxSpeed
+    ) {
+    // collision matrix initisalisation
+    for (int i = 0; i < cols*rows -1; i++) {
+      m_colls[i] = false;
+    }
+    // set up each particle
+    for (int i = 0; i < m_noOfPoints; i++) {
+      m_particles[i] = new Particle(random(xmin, xmax), random(ymin, ymax));
+      m_particles[i].m_detectCollisions = detectCollisions;
+      m_particles[i].m_lifetime = lifetime;
+      m_particles[i].m_invisible = invisible;
+      m_particles[i].m_useRectangles = useRectangles;
+      m_particles[i].m_colorInit = colorInit;
+      m_particles[i].m_colorFinal = colorFinal;
+      m_particles[i].m_widthInit = widthInit;
+      m_particles[i].m_widthFinal = widthFinal;
+      m_particles[i].m_maxSpeed = maxSpeed;
+    }
+    for (int j = 0; j < lifetime; j++) { // TODO: iterate over lifetime (m_life++)
+      // apply the flow field (flowField) on each
+      for (int i = 0; i < particles.length; i++) {
+        m_particles[i].follow(flowField.flowField);
+        m_particles[i].update2(flowField.flowField, m_colls);
+        m_particles[i].edges();
+        m_particles[i].show();
+        m_particles[i].updatePrev();
+        //println(m_particles[i].m_life);
+      }
+    }
+  }
 }
 
 
@@ -332,25 +460,6 @@ void setup() {
 
   cols = floor(width/scl);
   rows = floor(height/scl);
-
-  for (int i = 0; i < noOfPoints; i++) {
-    particles[i] = new Particle(random(500, 800), random(500, 600));
-    particles[i].m_detectCollisions = false;
-    particles[i].m_lifetime = 1000;
-    particles[i].m_invisible = 0.003;
-    particles[i].m_useRectangles = false;
-    particles[i].m_colorInit = color(200, 400, 400, 350);
-    particles[i].m_colorFinal = color(250, 400, 400, 350);
-    particles[i].m_widthInit = 25;
-    particles[i].m_widthFinal = 4;
-    //particles[i].m_maxSpeed = 2;
-  }
-
-  // initialise collision matrix
-  colls = new boolean[cols*rows];
-  for (int i = 0; i < cols*rows -1; i++) {
-    colls[i] = false;
-  }
 }
 
 
@@ -359,13 +468,21 @@ void draw() {
   //fill(0);
   FlowField flowField = new FlowField();
   flowField.create(421);
-  flowField.force = 0.05;
-
-  for (int i = 0; i < particles.length; i++) {
-    particles[i].follow(flowField.flowField);
-    particles[i].update(flowField.flowField);
-    particles[i].edges();
-    particles[i].show();
-    particles[i].updatePrev();
-  }
+  ParticleLayer layer = new ParticleLayer();
+  layer.create(flowField, 
+    200, 
+    500, 
+    300, 
+    800, 
+    false, 
+    500, 
+    0.1, 
+    true, 
+    color(200, 400, 400, 300), 
+    color(350, 400, 400, 300), 
+    25, 
+    4, 
+    0.5
+    );
+    noLoop();
 }
