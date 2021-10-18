@@ -1,19 +1,18 @@
 // Original by Daniel Shiffman
+// Modified by Leo Mavropalias
+
+
+//------------------------------------------------------------------------
+// Global variables; to be removed in the future
+//------------------------------------------------------------------------
+int cols;
+int rows;
+int scl = 20; // scale - the higher, the less granular the particles
 
 
 //------------------------------------------------------------------------
 // Particle class
 //------------------------------------------------------------------------
-
-int cols;
-int rows;
-
-int scl = 20;
-int noOfPoints = 700;
-Particle[] particles = new Particle[noOfPoints];
-boolean [] colls;
-
-
 class Particle {
   PVector pos = new PVector(random(width), random(height));
   PVector prevPos = pos.copy();
@@ -126,7 +125,6 @@ class Particle {
       collisions[index] = true;
     }
 
-
     acc.mult(0);
 
     // update lifetime
@@ -150,9 +148,11 @@ class Particle {
     applyForce(force);
   }
 
+
   void applyForce(PVector force) {
     acc.add(force);
   }
+
 
   public void show() {
     // exit conditions
@@ -162,13 +162,13 @@ class Particle {
     }
     // 2. end of lifetime
     if (m_life >= m_lifetime) {
-    return;
+      return;
     }
     // 3. invisibility set by the user
     if ((m_lifetime != 0) && (m_invisible > 0.0)) {
-       if ((float)m_life/m_life < m_invisible ) {
-        return; 
-       }
+      if ((float)m_life/m_life < m_invisible ) {
+        return;
+      }
     }
 
     if ((float)m_life/m_lifetime < m_invisible) {
@@ -204,10 +204,12 @@ class Particle {
     }
   }
 
+
   public void updatePrev() {
     prevPos.x = pos.x;
     prevPos.y = pos.y;
   }
+
 
   public void edges() {
     if (pos.x > width) {
@@ -251,15 +253,17 @@ class FlowField {
   float force = 0.05;
   FlowFieldDirection direction = FlowFieldDirection.VERTICAL;
 
-  FlowField() {
 
+  FlowField() {
     flowField = new PVector[(cols*rows)];
   }
+
 
   FlowField(int nPoints_) {
     nPoints = nPoints_;
     flowField = new PVector[(cols*rows)];
   }
+
 
   FlowField(int nPoints_, float scale_) {
     nPoints = nPoints_;
@@ -268,6 +272,7 @@ class FlowField {
     rows = floor(height/scale);
     flowField = new PVector[(cols*rows)];
   }
+
 
   FlowField(int nPoints_, float scale_, float xyinc_) {
     nPoints = nPoints_;
@@ -279,6 +284,7 @@ class FlowField {
     flowField = new PVector[(cols*rows)];
   }
 
+
   FlowField(int nPoints_, float scale_, float xyinc_, float force_) {
     nPoints = nPoints_;
     scale = scale_;
@@ -289,6 +295,7 @@ class FlowField {
     flowField = new PVector[(cols*rows)];
     force = force_;
   }
+
 
   public void create(int seed_) {
     noiseSeed(seed_);
@@ -332,6 +339,7 @@ class ParticleLayer {
   int m_seed = 420;
   boolean[] m_colls;
 
+
   ParticleLayer() {
     FlowField m_flowField = new FlowField();
     m_colls = new boolean[cols*rows];
@@ -341,6 +349,7 @@ class ParticleLayer {
       m_colls[i] = false;
     }
   }
+
 
   ParticleLayer(int seed) {
     FlowField m_flowField = new FlowField();
@@ -352,10 +361,10 @@ class ParticleLayer {
       m_colls[i] = false;
     }
   }
+  
 
   ParticleLayer(int seed, int nParticles) {
     FlowField m_flowField = new FlowField();
-    m_particles = new Particle[m_noOfPoints];
     m_colls = new boolean[cols*rows];
     m_seed = seed;
     m_flowField.create(m_seed);
@@ -363,6 +372,7 @@ class ParticleLayer {
       m_colls[i] = false;
     }
     m_noOfPoints = nParticles;
+    m_particles = new Particle[m_noOfPoints];
   }
 
   public void create(FlowField flowField, 
@@ -385,7 +395,8 @@ class ParticleLayer {
       m_colls[i] = false;
     }
     // set up each particle
-    for (int i = 0; i < m_noOfPoints; i++) {
+    //println(particles.length, m_noOfPoints);
+    for (int i = 0; i < m_particles.length; i++) {
       m_particles[i] = new Particle(random(xmin, xmax), random(ymin, ymax));
       m_particles[i].m_detectCollisions = detectCollisions;
       m_particles[i].m_lifetime = lifetime;
@@ -399,7 +410,7 @@ class ParticleLayer {
     }
     for (int j = 0; j < lifetime; j++) { // TODO: iterate over lifetime (m_life++)
       // apply the flow field (flowField) on each
-      for (int i = 0; i < particles.length; i++) {
+      for (int i = 0; i < m_particles.length; i++) {
         m_particles[i].follow(flowField.flowField);
         m_particles[i].update(flowField.flowField, m_colls);
         m_particles[i].edges();
@@ -421,10 +432,8 @@ void setup() {
   orientation(LANDSCAPE);
   colorMode(HSB, 400);
   smooth();
-
   background(400);
-  //hint(DISABLE_DEPTH_MASK);
-
+  hint(DISABLE_DEPTH_MASK);
   cols = floor(width/scl);
   rows = floor(height/scl);
 }
@@ -432,25 +441,24 @@ void setup() {
 
 
 void draw() {
-  //fill(0);
   FlowField flowField = new FlowField();
   flowField.create(421);
-  ParticleLayer layer = new ParticleLayer();
+  ParticleLayer layer = new ParticleLayer(42, 20);
   layer.create(flowField, 
     200, 
-    500, 
+    400, 
     300, 
-    800, 
+    400, 
     false, 
-    500, 
+    250, 
     0.01, 
-    true, 
-    color(200, 400, 400, 300), 
+    false, 
     color(350, 400, 400, 300), 
-    25, 
+    color(250, 400, 400, 300), 
+    50, 
     4, 
     0.5
     );
-    // important, don't forget it!
-    noLoop();
+  // important, don't forget it!
+  noLoop();
 }
