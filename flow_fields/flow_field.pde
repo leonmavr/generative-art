@@ -32,6 +32,10 @@ class Particle {
   boolean m_useRectangles = false;
   float m_widthInit = 4.0, m_widthFinal = 4.0; // line width of Pelin noise lines
   color m_colorInit = col, m_colorFinal = col; // line colour in between is interpolated
+  // to draw discs at the end of the lines
+  color m_colorCircleIn = color(400,400,400,400);
+  color m_colorCircleOut = color(400,400,300,400);
+  float m_probCircle = 0.00; // the higher this probability, the more circles are drawn at the end of lifetime
 
 
   Particle() {
@@ -172,7 +176,6 @@ class Particle {
     }
 
     if ((float)m_life/m_lifetime < m_invisible) {
-      //println((float)m_life/m_lifetime, m_invisible * m_lifetime);
       return;
     }
 
@@ -191,6 +194,16 @@ class Particle {
     strokeWeight(w);
     if (!m_useRectangles) {
       line(x0, y0, x1, y1);
+      if ((m_life == m_lifetime - 1) && (random(1) <= m_probCircle)) {
+        fill(m_colorCircleIn);
+        strokeWeight(2);
+        stroke(m_colorCircleOut);
+        int rad = floor(random(20, 40)); 
+        ellipse(x1, y1, rad, rad);   
+        fill(lerpColor(m_colorInit, m_colorFinal, (float)m_life/m_lifetime));
+        stroke(lerpColor(m_colorInit, m_colorFinal, (float)m_life/m_lifetime));
+        strokeWeight(w);
+      }
     } else {
       pushMatrix();
       beginShape();
@@ -361,7 +374,7 @@ class ParticleLayer {
       m_colls[i] = false;
     }
   }
-  
+
 
   ParticleLayer(int seed, int nParticles) {
     FlowField m_flowField = new FlowField();
@@ -397,7 +410,7 @@ class ParticleLayer {
     // set up each particle
     //println(particles.length, m_noOfPoints);
     for (int i = 0; i < m_particles.length; i++) {
-      m_particles[i] = new Particle(random(xmin, xmax), random(ymin, ymax));
+      m_particles[i] = new Particle(xmin + (xmax - xmin) * abs(randomGaussian()/2), ymin + (ymax - ymin) * abs(randomGaussian()/2));
       m_particles[i].m_detectCollisions = detectCollisions;
       m_particles[i].m_lifetime = lifetime;
       m_particles[i].m_invisible = invisible;
@@ -441,14 +454,41 @@ void setup() {
 
 
 void draw() {
+  noiseSeed(1);
+  randomSeed(2);
   FlowField flowField = new FlowField();
   flowField.create(421);
-  ParticleLayer layer = new ParticleLayer(42, 20);
+  ParticleLayer layer = new ParticleLayer(42, 200);
+  color[] sky;
+  sky = new color[5];
+  sky[0] = #ffffff;
+  int yRan = 100;
+  int xRan = 200;
+  // create(
+  //FlowField flowField, int xmin, int xmax, int ymin, int ymax, boolean detectCollisions,
+  //int lifetime, float invisible, boolean useRectangles,
+  //color colorInit, color colorFinal, float widthInit, float widthFinal, float maxSpeed)
   layer.create(flowField, 
     200, 
     400, 
     300, 
     400, 
+    false, 
+    250, 
+    0.01, 
+    false, 
+    color(250, 400, 400, 300), 
+    color(250, 200, 400, 300), 
+    50, 
+    4, 
+    0.5
+    );
+    
+    layer.create(flowField, 
+    100, 
+    300, 
+    height - 200, 
+    height,
     false, 
     250, 
     0.01, 
