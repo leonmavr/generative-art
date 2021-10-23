@@ -33,8 +33,8 @@ class Particle {
   float m_widthInit = 4.0, m_widthFinal = 4.0; // line width of Pelin noise lines
   color m_colorInit = col, m_colorFinal = col; // line colour in between is interpolated
   // to draw discs at the end of the lines
-  color m_colorCircleIn = color(400,400,400,400);
-  color m_colorCircleOut = color(400,400,300,400);
+  color m_colorCircleIn = color(400, 400, 400, 400);
+  color m_colorCircleOut = color(400, 400, 300, 400);
   float m_probCircle = 0.00; // the higher this probability, the more circles are drawn at the end of lifetime
 
 
@@ -441,11 +441,11 @@ class ParticleLayer {
 // Setup and main
 //------------------------------------------------------------------------
 void setup() {
-  size(1280, 1080, P2D);
+  size(1200, 1000, P2D);
   orientation(LANDSCAPE);
   colorMode(HSB, 400);
   smooth();
-  background(400);
+  background(100);
   hint(DISABLE_DEPTH_MASK);
   cols = floor(width/scl);
   rows = floor(height/scl);
@@ -455,50 +455,60 @@ void setup() {
 
 void draw() {
   noiseSeed(1);
-  randomSeed(2);
+  randomSeed(3);
+  // particles
   FlowField flowField = new FlowField();
   flowField.create(421);
-  ParticleLayer layer = new ParticleLayer(42, 200);
+  ParticleLayer layer = new ParticleLayer(42, 120);
+  int yRan = 75;
+  int xRan = 100;
+  // pallet
   color[] sky;
+  color[] skyFinal;
   sky = new color[5];
-  sky[0] = #ffffff;
-  int yRan = 100;
-  int xRan = 200;
+  skyFinal = new color[5];
+  sky[0] = color(23, 120, 400, 100);
+  skyFinal[0] = color(23, 120, 250, 100);
+  sky[1] = color(13, 160, 400, 300);
+  skyFinal[1] = color(13, 160, 250, 100);
+  sky[2] = color(397, 136, 360, 100);
+  skyFinal[2] = color(397, 136, 220, 100);
+  sky[2] = color(397, 136, 360, 300);
+  skyFinal[2] = color(397, 136, 220, 100);
+  sky[3] = color(386, 112, 244, 100);
+  skyFinal[3] = color(386, 112, 110, 100);
+  sky[4] = color(293, 44, 184, 300);
+  skyFinal[4] = color(293, 44, 100, 300);
+  int i;
+
   // create(
   //FlowField flowField, int xmin, int xmax, int ymin, int ymax, boolean detectCollisions,
   //int lifetime, float invisible, boolean useRectangles,
   //color colorInit, color colorFinal, float widthInit, float widthFinal, float maxSpeed)
-  layer.create(flowField, 
-    200, 
-    400, 
-    300, 
-    400, 
-    false, 
-    250, 
-    0.01, 
-    false, 
-    color(250, 400, 400, 300), 
-    color(250, 200, 400, 300), 
-    50, 
-    4, 
-    0.5
-    );
-    
+
+  for (int j = 0; j < 22; j++) {
+    println(j);
+    i = floor(random(5));
+    int x0 = floor(random(width));
+    int y0 = floor(random(0));
     layer.create(flowField, 
-    100, 
-    300, 
-    height - 200, 
-    height,
-    false, 
-    250, 
-    0.01, 
-    false, 
-    color(350, 400, 400, 300), 
-    color(250, 400, 400, 300), 
-    50, 
-    4, 
-    0.5
-    );
+      x0, 
+      x0 + width/4 + floor(random(xRan)), 
+      y0, 
+      y0 + 3*height/4, 
+      false, 
+      400 + floor(random(100)), 
+      0.01, 
+      true, 
+      sky[i], 
+      skyFinal[i], 
+      random(20,25), 
+      4, 
+      0.5
+      );
+  }
+
+
   // important, don't forget it!
   noLoop();
 }
