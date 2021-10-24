@@ -8,6 +8,10 @@
 int cols;
 int rows;
 int scl = 20; // scale - the higher, the less granular the particles
+// pallet
+color[] sky;
+color[] skyFinal;
+
 
 
 //------------------------------------------------------------------------
@@ -436,12 +440,36 @@ class ParticleLayer {
 }
 
 
+//------------------------------------------------------------------------
+// Draw mountains
+//------------------------------------------------------------------------
+void mountains(int howMany, float maxHeight, color colorFill, color colorStroke) {
+  float minHeight = maxHeight/10;
+  fill(sky[4]);
+  stroke(colorStroke);
+  strokeWeight(2.5);
+  for (int i = 0; i < howMany; i++) {
+    int period = floor(random(width/4, width));
+    float ampl = minHeight + (float)(howMany-i)/howMany * (maxHeight - minHeight);
+    //println(period, ampl);
+    beginShape();
+    for (int x = 0; x < width; x++) {
+      float y = abs(height - 1.2*ampl - ampl/2*sin(TWO_PI/period*x) - ampl/2*sin(TWO_PI/period*0.5*x) + ampl*noise(x/(width/4.0)));
+      vertex(x, y);
+    }
+    // close the polygon so it can be filled
+    vertex(width+10, height);
+    vertex(-10, height);
+    endShape();
+  }
+}
+
 
 //------------------------------------------------------------------------
 // Setup and main
 //------------------------------------------------------------------------
 void setup() {
-  size(1200, 1000, P2D);
+  size(1200, 741, P2D);
   orientation(LANDSCAPE);
   colorMode(HSB, 400);
   smooth();
@@ -449,22 +477,7 @@ void setup() {
   hint(DISABLE_DEPTH_MASK);
   cols = floor(width/scl);
   rows = floor(height/scl);
-}
 
-
-
-void draw() {
-  noiseSeed(1);
-  randomSeed(3);
-  // particles
-  FlowField flowField = new FlowField();
-  flowField.create(421);
-  ParticleLayer layer = new ParticleLayer(42, 120);
-  int yRan = 75;
-  int xRan = 100;
-  // pallet
-  color[] sky;
-  color[] skyFinal;
   sky = new color[5];
   skyFinal = new color[5];
   sky[0] = color(23, 120, 400, 100);
@@ -479,14 +492,28 @@ void draw() {
   skyFinal[3] = color(386, 112, 110, 100);
   sky[4] = color(293, 44, 184, 300);
   skyFinal[4] = color(293, 44, 100, 300);
+}
+
+
+
+void draw() {
+  noiseSeed(19803242);
+  randomSeed(3109832);
+  // particles
+  FlowField flowField = new FlowField();
+  flowField.create(421);
+  ParticleLayer layer = new ParticleLayer(42, 120);
+  int yRan = 75;
+  int xRan = 100;
+
   int i;
+
 
   // create(
   //FlowField flowField, int xmin, int xmax, int ymin, int ymax, boolean detectCollisions,
   //int lifetime, float invisible, boolean useRectangles,
   //color colorInit, color colorFinal, float widthInit, float widthFinal, float maxSpeed)
-
-  for (int j = 0; j < 22; j++) {
+  for (int j = 0; j < 35; j++) {
     println(j);
     i = floor(random(5));
     int x0 = floor(random(width));
@@ -502,11 +529,13 @@ void draw() {
       true, 
       sky[i], 
       skyFinal[i], 
-      random(20,25), 
+      random(20, 25), 
       4, 
       0.5
       );
   }
+
+  mountains(floor(random(7, 30)), height/6, color(0, 0, 110, 400), color(0, 0, 0, 400));
 
 
   // important, don't forget it!
