@@ -11,7 +11,8 @@ int scl = 20; // scale - the higher, the less granular the particles
 // pallet
 color[] sky;
 color[] skyFinal;
-
+color[] trees;
+color mountains;
 
 
 //------------------------------------------------------------------------
@@ -445,22 +446,45 @@ class ParticleLayer {
 //------------------------------------------------------------------------
 void mountains(int howMany, float maxHeight, color colorFill, color colorStroke) {
   float minHeight = maxHeight/10;
-  fill(sky[4]);
+  fill(mountains);
   stroke(colorStroke);
   strokeWeight(2.5);
+
   for (int i = 0; i < howMany; i++) {
     int period = floor(random(width/4, width));
     float ampl = minHeight + (float)(howMany-i)/howMany * (maxHeight - minHeight);
+    int phase = floor(random(2000000));
     //println(period, ampl);
     beginShape();
+    float mean = 0;
     for (int x = 0; x < width; x++) {
       float y = abs(height - 1.2*ampl - ampl/2*sin(TWO_PI/period*x) - ampl/2*sin(TWO_PI/period*0.5*x) + ampl*noise(x/(width/4.0)));
       vertex(x, y);
+      mean += y;
     }
+
     // close the polygon so it can be filled
-    vertex(width+10, height);
-    vertex(-10, height);
+    vertex(width+100, height);
+    vertex(-100, height);
     endShape();
+
+    mean /= width;
+    int ntrees = round(random(8));
+    for (int j = 0; j < ntrees; j++) {
+      beginShape();
+      fill(trees[floor(random(5))]);
+      int x0 = floor(random(width));
+      int y0 = height;
+      int y1 =  floor(random(0.8*mean, 1.4*mean));
+      int x1  = x0 + floor(random(width/45, width/60));
+      vertex(x0, y0);
+      vertex(x0, y1);
+      vertex(x1, y1);
+      vertex(x1, y0);
+      endShape();
+    }
+    fill(mountains);
+    stroke(colorStroke);
   }
 }
 
@@ -480,32 +504,42 @@ void setup() {
 
   sky = new color[5];
   skyFinal = new color[5];
+  trees = new color[5];
   sky[0] = color(23, 120, 400, 100);
   skyFinal[0] = color(23, 120, 250, 100);
+  trees[0] = color(23, 120, 400, 400);
   sky[1] = color(13, 160, 400, 300);
   skyFinal[1] = color(13, 160, 250, 100);
+  trees[1] = color(13, 160, 400, 400);
   sky[2] = color(397, 136, 360, 100);
   skyFinal[2] = color(397, 136, 220, 100);
-  sky[2] = color(397, 136, 360, 300);
-  skyFinal[2] = color(397, 136, 220, 100);
+  trees[2] = color(397, 136, 360, 400);
   sky[3] = color(386, 112, 244, 100);
   skyFinal[3] = color(386, 112, 110, 100);
-  sky[4] = color(293, 44, 184, 300);
-  skyFinal[4] = color(293, 44, 100, 300);
+  trees[3] = color(386, 112, 244, 400);
+  sky[4] = color(293, 44, 184, 200);
+  skyFinal[4] = color(293, 44, 100, 200);
+  trees[4] = color(293, 44, 184, 400);
+  mountains = color(268, 44, 164, 400);
 }
 
 
 
 void draw() {
-  noiseSeed(19803242);
-  randomSeed(3109832);
+  // seeds
+  int noiseSeed = 1983263;
+  int randomSeed = 31092331;
+  int flowFieldSeed = 1337;
+  int particleSeed = 13;
+  
+  noiseSeed(noiseSeed);
+  randomSeed(randomSeed);
   // particles
   FlowField flowField = new FlowField();
-  flowField.create(421);
-  ParticleLayer layer = new ParticleLayer(42, 120);
+  flowField.create(flowFieldSeed);
+  ParticleLayer layer = new ParticleLayer(particleSeed, 120);
   int yRan = 75;
   int xRan = 100;
-
   int i;
 
 
@@ -537,7 +571,7 @@ void draw() {
 
   mountains(floor(random(7, 30)), height/6, color(0, 0, 110, 400), color(0, 0, 0, 400));
 
-
   // important, don't forget it!
   noLoop();
+  saveFrame("/tmp/wildfires.png");
 }
