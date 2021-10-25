@@ -489,6 +489,20 @@ void mountains(int howMany, float maxHeight, color colorFill, color colorStroke)
 }
 
 
+// enter a HSV code from the website https://coolors.co/palettes, e.g. (100, 234, 90), and scale it for this program 
+// H, S, V, A all range from 0 to 400 in this program so scaling is required 
+color scaleHsv(int h, int s, int v, int a, boolean dark) {
+  h = round(h*400.0/360);
+  s *= 4;
+  v *= 4;
+  if (dark) {
+    s = max(0, s-20);
+    v = max(0, v-120);
+  }
+  return color(h, s, v, a);
+}
+
+
 //------------------------------------------------------------------------
 // Setup and main
 //------------------------------------------------------------------------
@@ -505,21 +519,27 @@ void setup() {
   sky = new color[5];
   skyFinal = new color[5];
   trees = new color[5];
-  sky[0] = color(23, 120, 400, 100);
-  skyFinal[0] = color(23, 120, 250, 100);
-  trees[0] = color(23, 120, 400, 400);
-  sky[1] = color(13, 160, 400, 300);
-  skyFinal[1] = color(13, 160, 250, 100);
-  trees[1] = color(13, 160, 400, 400);
-  sky[2] = color(397, 136, 360, 100);
-  skyFinal[2] = color(397, 136, 220, 100);
-  trees[2] = color(397, 136, 360, 400);
-  sky[3] = color(386, 112, 244, 100);
-  skyFinal[3] = color(386, 112, 110, 100);
-  trees[3] = color(386, 112, 244, 400);
-  sky[4] = color(293, 44, 184, 200);
-  skyFinal[4] = color(293, 44, 100, 200);
-  trees[4] = color(293, 44, 184, 400);
+
+  sky[0] = scaleHsv(12, 95, 15, 100, false);
+  skyFinal[0] = scaleHsv(12, 95, 15, 100, true);
+  trees[0] =  scaleHsv(12, 95, 15, 400, false);
+  
+  sky[1] = scaleHsv(348, 93, 22, 100, false);
+  skyFinal[1] = scaleHsv(348, 93, 22, 100, true);
+  trees[1] = scaleHsv(348, 93, 22, 400, false);
+  
+  sky[2] = scaleHsv(355, 87, 39, 100, false);
+  skyFinal[2] = scaleHsv(355, 87, 39, 100, true);
+  trees[2] = scaleHsv(355, 87, 39, 400, false);
+  
+  sky[3] = scaleHsv(357, 89, 50, 100, false);
+  skyFinal[3] = scaleHsv(357, 89, 50, 100, true);
+  trees[3] = scaleHsv(357, 89, 50, 400, false);
+  
+  sky[4] = scaleHsv(356, 77, 68, 100, false);
+  skyFinal[4] = scaleHsv(356, 77, 68, 100, true);
+  trees[4] = scaleHsv(356, 77, 68, 400, false);
+  
   mountains = color(268, 44, 164, 400);
 }
 
@@ -527,17 +547,17 @@ void setup() {
 
 void draw() {
   // seeds
-  int noiseSeed = 877511;
-  int randomSeed = 45732;
+  int noiseSeed = 662631;
+  int randomSeed = 4838484;
   int flowFieldSeed = floor(random(999999));
   int particleSeed = floor(random(999999));
   noiseSeed(noiseSeed);
   randomSeed(randomSeed);
-  
+
   // particles
   FlowField flowField = new FlowField();
   flowField.create(flowFieldSeed);
-  ParticleLayer layer = new ParticleLayer(particleSeed, 120);
+  ParticleLayer layer = new ParticleLayer(particleSeed, 150);
   int yRan = 75;
   int xRan = 100;
   int i;
@@ -547,7 +567,7 @@ void draw() {
   //FlowField flowField, int xmin, int xmax, int ymin, int ymax, boolean detectCollisions,
   //int lifetime, float invisible, boolean useRectangles,
   //color colorInit, color colorFinal, float widthInit, float widthFinal, float maxSpeed)
-  for (int j = 0; j < 35; j++) {
+  for (int j = 0; j < 37; j++) {
     println(j);
     i = floor(random(5));
     int x0 = floor(random(width));
@@ -563,7 +583,7 @@ void draw() {
       true, 
       sky[i], 
       skyFinal[i], 
-      random(20, 25), 
+      random(15, 20), 
       4, 
       0.5
       );
