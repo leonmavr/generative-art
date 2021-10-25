@@ -494,7 +494,7 @@ color scaleHsv(int h, int s, int v, int a, boolean dark) {
   v *= 4;
   if (dark) {
     s = max(0, s-10);
-    v = max(0, v-50);
+    v = max(0, v-80);
   }
   return color(h, s, v, a);
 }
@@ -544,8 +544,8 @@ void setup() {
 
 void draw() {
   // seeds
-  int noiseSeed = 662631;
-  int randomSeed = 4838484;
+  int noiseSeed = 4775;
+  int randomSeed = 13123;
   int flowFieldSeed = floor(random(999999));
   int particleSeed = floor(random(999999));
   noiseSeed(noiseSeed);
