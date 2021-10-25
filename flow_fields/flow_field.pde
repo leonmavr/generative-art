@@ -1,5 +1,4 @@
 // Original by Daniel Shiffman
-// Modified by Leo Mavropalias
 
 
 //------------------------------------------------------------------------
@@ -137,9 +136,7 @@ class Particle {
     acc.mult(0);
 
     // update lifetime
-    // TODO: lifetime not updated
     if (m_life < m_lifetime) {
-      // println("---",m_life, m_lifetime);
       m_life++;
     }
   }
@@ -496,8 +493,8 @@ color scaleHsv(int h, int s, int v, int a, boolean dark) {
   s *= 4;
   v *= 4;
   if (dark) {
-    s = max(0, s-20);
-    v = max(0, v-120);
+    s = max(0, s-10);
+    v = max(0, v-50);
   }
   return color(h, s, v, a);
 }
