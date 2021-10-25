@@ -453,12 +453,12 @@ void mountains(int howMany, float maxHeight, color colorFill, color colorStroke)
   for (int i = 0; i < howMany; i++) {
     int period = floor(random(width/4, width));
     float ampl = minHeight + (float)(howMany-i)/howMany * (maxHeight - minHeight);
-    int phase = floor(random(2000000));
+    float phase = random(TWO_PI);
     //println(period, ampl);
     beginShape();
     float mean = 0;
     for (int x = 0; x < width; x++) {
-      float y = abs(height - 1.2*ampl - ampl/2*sin(TWO_PI/period*x) - ampl/2*sin(TWO_PI/period*0.5*x) + ampl*noise(x/(width/4.0)));
+      float y = abs(height - 1.2*ampl - ampl/2*sin(TWO_PI/period*x + phase) - ampl/2*sin(TWO_PI/period*0.5*x + phase) + ampl*noise(x/(width/4.0)));
       vertex(x, y);
       mean += y;
     }
@@ -527,13 +527,13 @@ void setup() {
 
 void draw() {
   // seeds
-  int noiseSeed = 1983263;
-  int randomSeed = 31092331;
-  int flowFieldSeed = 1337;
-  int particleSeed = 13;
-  
+  int noiseSeed = 877511;
+  int randomSeed = 45732;
+  int flowFieldSeed = floor(random(999999));
+  int particleSeed = floor(random(999999));
   noiseSeed(noiseSeed);
   randomSeed(randomSeed);
+  
   // particles
   FlowField flowField = new FlowField();
   flowField.create(flowFieldSeed);
@@ -573,5 +573,5 @@ void draw() {
 
   // important, don't forget it!
   noLoop();
-  saveFrame("/tmp/wildfires.png");
+  saveFrame(String.format("/tmp/wildfires_%d_%d.png", randomSeed, noiseSeed));
 }
