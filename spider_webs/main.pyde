@@ -9,9 +9,6 @@ import subprocess
 
 Node = namedtuple('Node', ['id', 'x', 'y'])
 Point = namedtuple('Point', ['x', 'y'])
-Segment = namedtuple('Segment', ['hop', 'x0', 'y0', 'x1', 'y1'])
-Point = namedtuple('Point', ['x', 'y'])
-
 
 
 class Colormap:
@@ -24,18 +21,16 @@ class Colormap:
         self._coarse = coarseness
         self._color_begin = color_begin
         self._color_end = color_end
-        # TODO: linear interpolation
+        # TODO: rename
         self._colormap = [[color_begin] * self._rows] * self._cols
-        # paint the colormap with a vertical linear gradient
+        # paint the colormap with a horizontal linear gradient
         for row in range(len(self._colormap[0])):
             for col in range(len(self._colormap)):
                 self._colormap[col][row] = lerpColor(color_begin, color_end, 1.0*row/len(self._colormap[0]))
-        #print self._colormap
         
         
     def __getitem__(self, indxy):
         indcol, indrow = indxy
-        #print ":i ", indrow, indcol, indrow/self._coarse, indcol/self._coarse
         return self._colormap[int(indcol/self._coarse)][int(indrow/self._coarse)]
         
 
@@ -80,9 +75,6 @@ class NodeSet:
         return self._randint()
     
     def _random_id(self):
-        #print "-> ", self._randint()
-        #randomSeed(int(random(0, self.INFTY)))
-        #ret = random.choice(list(self._nodes.keys()))
         ind = self._randint(len(self._nodes))
         keys_ = [k for k in self._nodes.keys()]
         ret = keys_[ind]
@@ -116,7 +108,7 @@ class NodeSet:
     def _add_node(self, newnode):
         newid = newnode.id
         for id1, n1 in self._nodes.items(): # key: id, value: node
-            self._distances[self._key(id1, newid)] = self._get_dis(newnode, n1)
+            self._distances[self._key(id1, newid)] = self._get_dist(newnode, n1)
         self._nodes[newid] = newnode
         
     def min_tree(self, n_edges = 5, origin = None):
@@ -163,8 +155,7 @@ class NodeSet:
         self._path = ret
         return ret
     
-    def draw(self, nodes = True, tree = True, rad = 9, linewidth = 2, colormap = None):
-        #print self._path  
+    def draw(self, nodes = True, tree = True, rad = 6, linewidth = 2, colormap = None):
         if tree:
             strokeWeight(linewidth)
             for p1, p2 in zip(self._path, self._path[1:]):
@@ -188,7 +179,6 @@ def setup():
     blendMode(BLEND)
     smooth()
     noLoop()
-    #randomSeed(1)
     
     
 def draw():
@@ -210,4 +200,4 @@ def draw():
         nodeset.draw(nodes = True)
     for _ in range(3):
         nodeset.min_tree(30, (random(400,450)//20*20,random(300,350)//coarse*coarse))
-        nodeset.draw(nodes = True)t
+        nodeset.draw(nodes = True)
