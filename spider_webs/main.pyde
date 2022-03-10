@@ -11,9 +11,14 @@ Node = namedtuple('Node', ['id', 'x', 'y'])
 Point = namedtuple('Point', ['x', 'y'])
 
 
+        
+def hex2col(hexstr):
+    return color(int(hexstr[:2], 16), int(hexstr[2:4], 16), int(hexstr[4:6], 16), int(hexstr[6:], 16))
+
+
 class Colormap:
     def __init__(self, cwidth, cheight, coarseness = 20,\
-                 color_begin = color(0, 80, 100, 100), color_end = color(360, 80, 100, 100)):
+                 color_begin = color(255, 0, 0), color_end = color(0, 0, 0)):
         self._width = cwidth
         self._height = cheight
         self._rows = int(cheight/coarseness)+1
@@ -31,40 +36,43 @@ class Colormap:
         
     def __getitem__(self, indxy):
         indcol, indrow = indxy
-        return self._colormap[int(indcol/self._coarse)][int(indrow/self._coarse)]
-        
+        try:
+            return self._colormap[int(indcol/self._coarse)][int(indrow/self._coarse)]
+        except:
+            return lerpColor(self._color_begin, self._color_end, 0.5)
 
 
 class NodeSet:
-    
     INFTY = 2**32-1 # 64-bit ints
     
-    def __init__(self, x0 = 450, y0 = 300, w = 200, h = 200, num_nodes = 500,\
-                      max_hops = 8, coarse = 40):
+    def __init__(self, x0 = 450, y0 = 300, w = 200, h = 200, nodes_per_cloud = 80,\
+                coarse = 40, color_begin = color(unhex('ff0000')), color_end = color(unhex('333333')),
+                rattling = 0):
         self._x0 = x0
         self._y0 = y0
         self._w = w
         self._h = h
         self._nodes = {} # ID -> (x, y)
-        self._num_nodes = num_nodes
-        self._max_hops = max_hops
-        self._distances = {}
+        self._num_nodes = nodes_per_cloud
+        self._distances = {} # ID1-ID2 -> float
         # to avoid collisions in the node ID generation
         self._chosen_ids = set()
         # minimum spanning tree path (list of Points)
         self._path = []
         self._coarse = coarse
-        self._colormap = Colormap(900, 600)
+        self._colormap = Colormap(width, height, coarse,
+                                  color_begin = color_begin, color_end = color_end )
+        self._median_dist = None # to be updated every time ._nodes is changed
+        self._rattling = rattling
         
         
     def __getitem__(self, ind):
         return self._nodes[ind]
  
     @classmethod   
-    def _randint(self, max = 2**16-1):
+    def _randint(self, max = 2**32-1):
         cmd = 'echo $(( $RANDOM %% %d ))' % max
         out_stream = os.popen(cmd)
-        # "R: ", int(out_stream.read())
         return int(out_stream.read())
         
     
@@ -99,17 +107,22 @@ class NodeSet:
         for id1, n1 in self._nodes.items(): # key: id, value: node
             for id2, n2 in self._nodes.items():
                 if n1 != n2: self._distances[self._key(id1, id2)] = self._get_dist(n1,n2)
+        dists = self._distances.values()
+        self._median_dist = sort(dists)[int(round(len(dists)/2))]
+        #print self._median_dist
     
     
     def clear_cloud(self):
         self._nodes = {}
         self._distances = {}
+        self._median_dist = None
     
     def _add_node(self, newnode):
         newid = newnode.id
         for id1, n1 in self._nodes.items(): # key: id, value: node
             self._distances[self._key(id1, newid)] = self._get_dist(newnode, n1)
         self._nodes[newid] = newnode
+        # TODO: update median distance?
         
     def min_tree(self, n_edges = 5, origin = None):
         """origin: either None or (x, y)"""
@@ -132,7 +145,9 @@ class NodeSet:
         #            ))
         
         ret = [Point(node_origin.x, node_origin.y)] # list of Points
-        ### like Prim's minimum spanning tree but everything is reachable
+        ### Prim's minimum spanning tree - use the median distance to determine reachability
+        are_reachable = lambda node1, node2: self._get_dist(v, u) < self._median_dist
+        are_reachable = lambda node1, node2: True
         while len(unvisited) != 0:
             for vid, v in visited.items():
                 # for each unvisited: find id in unvisited
@@ -141,14 +156,14 @@ class NodeSet:
                 min_uid = None
                 min_node = None
                 for uid, u in unvisited.items():
-                    if self._get_dist(v, u) < min_dist:
+                    if self._get_dist(v, u) < min_dist and are_reachable(u, v):
                         min_dist = self._get_dist(v, u)
                         min_uid = uid
                         min_node = u
                 ret.append(Point(min_node.x, min_node.y))
                 unvisited.pop(min_uid)
                 visited[min_uid] = min_node
-                if len(unvisited) == 0:
+                if len(unvisited) == 0 or  all([not are_reachable(u, v) for _, u in unvisited.items()]):
                     break
         # the origin is not part of the original pointcloud
         self._nodes.pop(node_origin.id)
@@ -160,7 +175,11 @@ class NodeSet:
             strokeWeight(linewidth)
             for p1, p2 in zip(self._path, self._path[1:]):
                 stroke(self._colormap[p1.x, p1.y])
-                line(p1.x, p1.y, p2.x, p2.y)
+                r = self._rattling
+                if r == 0:
+                    line(p1.x, p1.y,p2.x , p2.y)
+                else:
+                    line(p1.x + random(-r, r), p1.y + random(-r, r) ,p2.x + random(-r, r) , p2.y + random(-r, r))
                 if nodes:
                     noStroke()
                     fill(self._colormap[p1.x, p1.y])
@@ -170,34 +189,80 @@ class NodeSet:
                 fill(self._colormap[p1.x, p1.y])
                 ellipse(self._path[-1].x, self._path[-1].y, rad, rad)
         
-        
+
 
 def setup():
     size(900,600)
-    colorMode(HSB, 360, 100, 100, 100);
-    background(0, 0 ,0)
+    colorMode(RGB, 255, 255, 255);
+    background(unhex('b7bbcc'))
     blendMode(BLEND)
     smooth()
     noLoop()
+    #randomSeed(1)
     
     
 def draw():
-    stroke(0)
-    strokeWeight(5)
-    coarse = 14
-    nodeset = NodeSet(num_nodes = 300, coarse = coarse)
+    coarse = 20
+    n_seeds = 3
+    reps = 7
+    rattling = 1 # how much the nodes can deviate (+-) in pixels
+    cloud_width, cloud_height = width/6, height/6
+    nodeset = NodeSet(nodes_per_cloud = 400, coarse = coarse,
+                      color_begin = hex2col('55433680'), color_end = hex2col('2a221bd0'),
+                      rattling = rattling)
+    n_pixels = width*height
+    ind1d_to_2d = lambda xy: (max(int(0.2*width), int(xy) % int(0.8*width)), max(int(0.2*height), int(xy)//height % (0.8*height)))
+    create_seed = lambda : ind1d_to_2d(int(n_pixels/2 + randomGaussian()*n_pixels/5) % n_pixels)
     
-    strokeWeight(1)
-    stroke(210,100,100,50)
-    fill(210,100,100,50)
-    nodeset.create_cloud(x0 = 350, y0 = 200, w = 120, h = 130)
-    nodeset.create_cloud(x0 = 500, y0 = 350, w = 80, h = 80)
-    for _ in range(3):
-        nodeset.min_tree(30, (random(200,210)//coarse*coarse,random(200,210)//coarse*coarse))
-        nodeset.draw(nodes = True)
-    for _ in range(3):
-        nodeset.min_tree(30, (random(260,270)//coarse*coarse,random(200,210)//coarse*coarse))
-        nodeset.draw(nodes = True)
-    for _ in range(3):
-        nodeset.min_tree(30, (random(400,450)//20*20,random(300,350)//coarse*coarse))
-        nodeset.draw(nodes = True)
+
+    ### layer 1 of web
+    for _ in range(reps): 
+        for __ in range(n_seeds):
+            #origin = create_seed() # tuple
+            origin = create_seed() # tuple
+            nodeset.create_cloud(*origin, w=cloud_width, h=cloud_height)
+            nodeset.min_tree(50, origin = (origin[0], origin[1]))
+            nodeset.draw(nodes = False)
+        print "rep ", _
+        nodeset.clear_cloud()
+    
+    ### layer 2 of web
+    coarse = 20
+    n_seeds = 6
+    reps = 4
+    rattling = 1
+    cloud_width, cloud_height = width/10, height/10
+    nodeset = NodeSet(nodes_per_cloud = 300, coarse = coarse,
+                      color_begin = hex2col('9E958180'), color_end = hex2col('665b44D0'),
+                      rattling = rattling)
+    
+    for _ in range(reps): 
+        for __ in range(n_seeds):
+            origin = create_seed() # tuple
+            nodeset.create_cloud(*origin, w=cloud_width, h=cloud_height)
+            nodeset.min_tree(50, origin = (origin[0], origin[1]))
+            nodeset.draw(nodes = False)
+        print "rep ", _
+        nodeset.clear_cloud()
+        
+        
+    ### layer 3 of web
+    coarse = 20
+    n_seeds = 8
+    reps = 4
+    rattling = 1
+    cloud_width, cloud_height = width/8, height/8
+    nodeset = NodeSet(nodes_per_cloud = 250, coarse = coarse,
+                      color_begin = hex2col('4f5a4080'), color_end = hex2col('252a1eD0'),
+                      rattling = rattling)
+    
+    for _ in range(reps): 
+        for __ in range(n_seeds):
+            origin = create_seed() # tuple
+            nodeset.create_cloud(*origin, w=cloud_width, h=cloud_height)
+            nodeset.min_tree(60, origin = (origin[0], origin[1]))
+            nodeset.draw(nodes = False)
+        print "rep ", _
+        nodeset.clear_cloud()
+      
+    print "=== done! ==="
