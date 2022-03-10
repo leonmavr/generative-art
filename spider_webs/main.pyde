@@ -109,6 +109,7 @@ class NodeSet:
                 if n1 != n2: self._distances[self._key(id1, id2)] = self._get_dist(n1,n2)
         dists = self._distances.values()
         self._median_dist = sort(dists)[int(round(len(dists)/2))]
+        print "med: ", self._median_dist
         #print self._median_dist
     
     
@@ -160,10 +161,12 @@ class NodeSet:
                         min_dist = self._get_dist(v, u)
                         min_uid = uid
                         min_node = u
+                if min_node is None:
+                    continue
                 ret.append(Point(min_node.x, min_node.y))
                 unvisited.pop(min_uid)
                 visited[min_uid] = min_node
-                if len(unvisited) == 0 or  all([not are_reachable(u, v) for _, u in unvisited.items()]):
+                if len(unvisited) == 0 or all([not are_reachable(u, v) for _, u in unvisited.items()]):
                     break
         # the origin is not part of the original pointcloud
         self._nodes.pop(node_origin.id)
@@ -194,7 +197,7 @@ class NodeSet:
 def setup():
     size(900,600)
     colorMode(RGB, 255, 255, 255);
-    background(unhex('b7bbcc'))
+    background(unhex('d1e0de'))
     blendMode(BLEND)
     smooth()
     noLoop()
@@ -202,67 +205,94 @@ def setup():
     
     
 def draw():
-    coarse = 20
-    n_seeds = 3
-    reps = 7
-    rattling = 1 # how much the nodes can deviate (+-) in pixels
-    cloud_width, cloud_height = width/6, height/6
-    nodeset = NodeSet(nodes_per_cloud = 400, coarse = coarse,
-                      color_begin = hex2col('55433680'), color_end = hex2col('2a221bd0'),
-                      rattling = rattling)
     n_pixels = width*height
     ind1d_to_2d = lambda xy: (max(int(0.2*width), int(xy) % int(0.8*width)), max(int(0.2*height), int(xy)//height % (0.8*height)))
-    create_seed = lambda : ind1d_to_2d(int(n_pixels/2 + randomGaussian()*n_pixels/5) % n_pixels)
+    create_origin = lambda : ind1d_to_2d(int(n_pixels/2 + randomGaussian()*n_pixels/5) % n_pixels)
+
+    coarse = round(width/30)
+    n_origins = int(round(width/18))
+    origins = [create_origin() for _ in range(n_origins)]
     
 
     ### layer 1 of web
+    n_seeds = 3
+    reps = 8
+    rattling = 2 # how much the nodes can deviate (+-) in pixels
+    cloud_width, cloud_height = width/4, height/4
+    n_edges = 50
+    nodeset = NodeSet(nodes_per_cloud = 400, coarse = coarse,
+                      color_begin = hex2col('55433680'), color_end = hex2col('2a221bd0'),
+                      rattling = rattling)
     for _ in range(reps): 
-        for __ in range(n_seeds):
-            #origin = create_seed() # tuple
-            origin = create_seed() # tuple
-            nodeset.create_cloud(*origin, w=cloud_width, h=cloud_height)
-            nodeset.min_tree(50, origin = (origin[0], origin[1]))
-            nodeset.draw(nodes = False)
+        for i in range(n_seeds):
+            ind_or = NodeSet._randint(n_origins)
+            nodeset.create_cloud(*origins[ind_or], w=cloud_width, h=cloud_height)
+            nodeset.min_tree(n_edges, origin = (origins[ind_or][0] + random(-25, 25), origins[ind_or][1] + random(-25, 25)))
+            nodeset.draw(nodes = True)
         print "rep ", _
         nodeset.clear_cloud()
     
     ### layer 2 of web
-    coarse = 20
-    n_seeds = 6
-    reps = 4
-    rattling = 1
-    cloud_width, cloud_height = width/10, height/10
+    n_seeds = 2
+    reps = 5
+    rattling = 2
+    cloud_width, cloud_height = width/8, height/8
+    n_edges = 50
     nodeset = NodeSet(nodes_per_cloud = 300, coarse = coarse,
-                      color_begin = hex2col('9E958180'), color_end = hex2col('665b44D0'),
+                      color_begin = hex2col('9E958160'), color_end = hex2col('665b44D0'),
                       rattling = rattling)
     
     for _ in range(reps): 
-        for __ in range(n_seeds):
-            origin = create_seed() # tuple
-            nodeset.create_cloud(*origin, w=cloud_width, h=cloud_height)
-            nodeset.min_tree(50, origin = (origin[0], origin[1]))
+        for i in range(n_seeds):
+            #origin = create_seed() # tuple
+            ind_or = NodeSet._randint(n_origins)
+            nodeset.create_cloud(*origins[ind_or], w=cloud_width, h=cloud_height)
+            nodeset.min_tree(n_edges, origin = (origins[ind_or][0] + random(-25, 25), origins[ind_or][1] + random(-25, 25)))
             nodeset.draw(nodes = False)
         print "rep ", _
         nodeset.clear_cloud()
         
         
     ### layer 3 of web
-    coarse = 20
-    n_seeds = 8
+    n_seeds = 3
     reps = 4
-    rattling = 1
+    rattling = 2
     cloud_width, cloud_height = width/8, height/8
+    n_edges = 40
     nodeset = NodeSet(nodes_per_cloud = 250, coarse = coarse,
                       color_begin = hex2col('4f5a4080'), color_end = hex2col('252a1eD0'),
                       rattling = rattling)
     
     for _ in range(reps): 
-        for __ in range(n_seeds):
-            origin = create_seed() # tuple
-            nodeset.create_cloud(*origin, w=cloud_width, h=cloud_height)
-            nodeset.min_tree(60, origin = (origin[0], origin[1]))
-            nodeset.draw(nodes = False)
+        for i in range(n_seeds):
+            #origin = create_seed() # tuple
+            ind_or = NodeSet._randint(n_origins)
+            nodeset.create_cloud(*origins[ind_or], w=cloud_width, h=cloud_height)
+            nodeset.min_tree(n_edges, origin = (origins[ind_or][0] + random(-25, 25), origins[ind_or][1] + random(-25, 25)))
+            nodeset.draw(nodes = True)
         print "rep ", _
         nodeset.clear_cloud()
-      
+        
+        
+    ### layer 4 of web
+    n_seeds = 2
+    reps = 6
+    rattling = 2
+    cloud_width, cloud_height = width/6, height/6
+    n_edges = 30
+    nodeset = NodeSet(nodes_per_cloud = 250, coarse = coarse,
+                      color_begin = hex2col('55353580'), color_end = hex2col('2c1b1bD0'),
+                      rattling = rattling)
+    
+    for _ in range(reps): 
+        for i in range(n_seeds):
+            #origin = create_seed() # tuple
+            ind_or = NodeSet._randint(n_origins)
+            nodeset.create_cloud(*origins[ind_or], w=cloud_width, h=cloud_height)
+            nodeset.min_tree(n_edges, origin = (origins[ind_or][0] + random(-25, 25), origins[ind_or][1] + random(-25, 25)))
+            nodeset.draw(nodes = True)
+        print "rep ", _
+        nodeset.clear_cloud()
+    
+    saveFrame("/tmp/spider_webs_%06d.tif" % NodeSet._randint(999999));
     print "=== done! ==="
