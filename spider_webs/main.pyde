@@ -147,9 +147,11 @@ class NodeSet:
         
         ret = [Point(node_origin.x, node_origin.y)] # list of Points
         ### Prim's minimum spanning tree - use the median distance to determine reachability
-        are_reachable = lambda node1, node2: self._get_dist(v, u) < self._median_dist
-        are_reachable = lambda node1, node2: True
-        while len(unvisited) != 0:
+        are_reachable = lambda node1, node2: self._get_dist(v, u) < 0.3*self._median_dist
+        #are_reachable = lambda node1, node2: True
+        max_tries = 2*len(visited)*len(unvisited)
+        tries = 0
+        while len(unvisited) != 0 and tries < max_tries:
             for vid, v in visited.items():
                 # for each unvisited: find id in unvisited
                 # that minimises distance between each visited and all unvisited
@@ -161,6 +163,7 @@ class NodeSet:
                         min_dist = self._get_dist(v, u)
                         min_uid = uid
                         min_node = u
+                tries += 1
                 if min_node is None:
                     continue
                 ret.append(Point(min_node.x, min_node.y))
@@ -173,7 +176,7 @@ class NodeSet:
         self._path = ret
         return ret
     
-    def draw(self, nodes = True, tree = True, rad = 6, linewidth = 2, colormap = None):
+    def draw(self, nodes = True, tree = True, rad = 4, linewidth = 1):
         if tree:
             strokeWeight(linewidth)
             for p1, p2 in zip(self._path, self._path[1:]):
@@ -191,13 +194,51 @@ class NodeSet:
                 noStroke()
                 fill(self._colormap[p1.x, p1.y])
                 ellipse(self._path[-1].x, self._path[-1].y, rad, rad)
-        
+ 
 
+    
+def brick (x0, y0, number = 3, w = 60, h = 100, block_size = 8,\
+                origin = 'tl', colors = ['ff0000bb', '00ff00bb', '0000ffbb'],\
+                rotation = 0.5, line_weight = 0, line_color = '333333df'):
+    # smoothstep interpolation: return (1-f(x))*a + f(x)*b, f(x) = 3x^2 - 2x^3"
+    smoothstep = lambda a, b, x: (1-(3*x**2 - 2*x**3))*a + (3*x**2 - 2*x**3)*b
+    thresh_min = .8 # probability of not drawing pixels at the top
+    thresh_max = .1 # probability of not drawing pixels at the bottom 
+    pushMatrix()
+    rotate(rotation)
+
+    for y in range(y0, y0+h, block_size):
+        for x in range(x0, x0+w, block_size):
+            #print random(1),abs(noise(n)), smoothstep(thresh_min, thresh_max, (y-y0)/h), 1.0*(y-y0)/h
+            
+            if random(1) > smoothstep(thresh_min, thresh_max, 1.0*(y-y0)/h):
+                beginShape()            
+                fill(hex2col(colors[int(random(len(colors)))]))            
+                noStroke()
+                vertex(x,y)
+                vertex(x+block_size, y)
+                vertex(x+block_size, y+block_size)
+                vertex(x,y+block_size)
+                endShape(CLOSE)
+
+
+    strokeWeight(line_weight+1)
+    stroke(hex2col(line_color))
+    beginShape()
+    noFill()
+    b = block_size
+    vertex(x0, y0)
+    vertex(x0 + w, y0)
+    vertex(x0 + w, y0+h+b/2)
+    vertex(x0, y0+h+b/2)
+    endShape(CLOSE)
+    popMatrix()
 
 def setup():
     size(900,600)
     colorMode(RGB, 255, 255, 255);
-    background(unhex('d1e0de'))
+    #background(unhex('d1e0de'))
+    background(255, 255, 255, 255)
     blendMode(BLEND)
     smooth()
     noLoop()
@@ -205,21 +246,22 @@ def setup():
     
     
 def draw():
+    
     n_pixels = width*height
-    ind1d_to_2d = lambda xy: (max(int(0.2*width), int(xy) % int(0.8*width)), max(int(0.2*height), int(xy)//height % (0.8*height)))
+    ind1d_to_2d = lambda xy: (max(int(0.1*width), int(xy) % int(0.9*width)), max(int(0.1*height), int(xy)//height % (0.9*height)))
     create_origin = lambda : ind1d_to_2d(int(n_pixels/2 + randomGaussian()*n_pixels/5) % n_pixels)
 
-    coarse = round(width/30)
+    coarse = round(width/50)
     n_origins = int(round(width/18))
     origins = [create_origin() for _ in range(n_origins)]
     
 
     ### layer 1 of web
-    n_seeds = 3
+    n_seeds = 4
     reps = 8
     rattling = 2 # how much the nodes can deviate (+-) in pixels
     cloud_width, cloud_height = width/4, height/4
-    n_edges = 50
+    n_edges = 60
     nodeset = NodeSet(nodes_per_cloud = 400, coarse = coarse,
                       color_begin = hex2col('55433680'), color_end = hex2col('2a221bd0'),
                       rattling = rattling)
@@ -233,13 +275,14 @@ def draw():
         nodeset.clear_cloud()
     
     ### layer 2 of web
-    n_seeds = 2
+    n_seeds = 3
     reps = 5
     rattling = 2
+    coarse = round(coarse/2)
     cloud_width, cloud_height = width/8, height/8
     n_edges = 50
     nodeset = NodeSet(nodes_per_cloud = 300, coarse = coarse,
-                      color_begin = hex2col('9E958160'), color_end = hex2col('665b44D0'),
+                      color_begin = hex2col('9E958180'), color_end = hex2col('665b44D0'),
                       rattling = rattling)
     
     for _ in range(reps): 
@@ -248,7 +291,7 @@ def draw():
             ind_or = NodeSet._randint(n_origins)
             nodeset.create_cloud(*origins[ind_or], w=cloud_width, h=cloud_height)
             nodeset.min_tree(n_edges, origin = (origins[ind_or][0] + random(-25, 25), origins[ind_or][1] + random(-25, 25)))
-            nodeset.draw(nodes = False)
+            nodeset.draw(nodes = True)
         print "rep ", _
         nodeset.clear_cloud()
         
@@ -257,7 +300,7 @@ def draw():
     n_seeds = 3
     reps = 4
     rattling = 2
-    cloud_width, cloud_height = width/8, height/8
+    cloud_width, cloud_height = width/6, height/8
     n_edges = 40
     nodeset = NodeSet(nodes_per_cloud = 250, coarse = coarse,
                       color_begin = hex2col('4f5a4080'), color_end = hex2col('252a1eD0'),
@@ -275,11 +318,12 @@ def draw():
         
         
     ### layer 4 of web
-    n_seeds = 2
+    n_seeds = 4
     reps = 6
     rattling = 2
     cloud_width, cloud_height = width/6, height/6
     n_edges = 30
+    coarse = round(coarse/2)
     nodeset = NodeSet(nodes_per_cloud = 250, coarse = coarse,
                       color_begin = hex2col('55353580'), color_end = hex2col('2c1b1bD0'),
                       rattling = rattling)
@@ -293,6 +337,45 @@ def draw():
             nodeset.draw(nodes = True)
         print "rep ", _
         nodeset.clear_cloud()
+        
+    ### layer 5 of web
+    n_seeds = 4
+    reps = 5
+    rattling = 2 # how much the nodes can deviate (+-) in pixels
+    cloud_width, cloud_height = width/6, height/4
+    n_edges = 60
+    nodeset = NodeSet(nodes_per_cloud = 400, coarse = coarse,
+                      color_begin = hex2col('55433680'), color_end = hex2col('2a221bd0'),
+                      rattling = rattling)
+    for _ in range(reps): 
+        for i in range(n_seeds):
+            ind_or = NodeSet._randint(n_origins)
+            nodeset.create_cloud(*origins[ind_or], w=cloud_width, h=cloud_height)
+            nodeset.min_tree(n_edges, origin = (origins[ind_or][0] + random(-25, 25), origins[ind_or][1] + random(-25, 25)))
+            nodeset.draw(nodes = True)
+        print "rep ", _
+        nodeset.clear_cloud()
+        
+    ### layer 6 of web
+    n_seeds = 2
+    reps = 4
+    rattling = 2
+    cloud_width, cloud_height = width/8, height/10
+    n_edges = 40
+    coarse = coarse/2
+    nodeset = NodeSet(nodes_per_cloud = 250, coarse = coarse,
+                      color_begin = hex2col('4f5a4080'), color_end = hex2col('252a1eD0'),
+                      rattling = rattling)
     
-    saveFrame("/tmp/spider_webs_%06d.tif" % NodeSet._randint(999999));
+    for _ in range(reps): 
+        for i in range(n_seeds):
+            #origin = create_seed() # tuple
+            ind_or = NodeSet._randint(n_origins)
+            nodeset.create_cloud(*origins[ind_or], w=cloud_width, h=cloud_height)
+            nodeset.min_tree(n_edges, origin = (origins[ind_or][0] + random(-25, 25), origins[ind_or][1] + random(-25, 25)))
+            nodeset.draw(nodes = True)
+        print "rep ", _
+        nodeset.clear_cloud()
+    
+    saveFrame("/tmp/spider_webs_%06d.png" % NodeSet._randint(999999));
     print "=== done! ==="
