@@ -1,4 +1,5 @@
 from collections import namedtuple
+from collections import OrderedDict as OD
 from random import randint # doesn't seem to work in P3 on Arch :(
 from math import sqrt
 import os
@@ -109,7 +110,7 @@ class NodeSet:
                 if n1 != n2: self._distances[self._key(id1, id2)] = self._get_dist(n1,n2)
         dists = self._distances.values()
         self._median_dist = sort(dists)[int(round(len(dists)/2))]
-        print "med: ", self._median_dist
+        #print "med: ", self._median_dist
         #print self._median_dist
     
     
@@ -196,49 +197,168 @@ class NodeSet:
                 ellipse(self._path[-1].x, self._path[-1].y, rad, rad)
  
 
+
+
     
 def brick (x0, y0, number = 3, w = 60, h = 100, block_size = 8,\
-                origin = 'tl', colors = ['ff0000bb', '00ff00bb', '0000ffbb'],\
-                rotation = 0.5, line_weight = 0, line_color = '333333df'):
+                origin = 'tl', colors = ['202020bb', '505050bb', '808080bb'],\
+                max_rotation = 1.25, line_weight = 0, line_color = '333333df'):
     # smoothstep interpolation: return (1-f(x))*a + f(x)*b, f(x) = 3x^2 - 2x^3"
     smoothstep = lambda a, b, x: (1-(3*x**2 - 2*x**3))*a + (3*x**2 - 2*x**3)*b
     thresh_min = .8 # probability of not drawing pixels at the top
     thresh_max = .1 # probability of not drawing pixels at the bottom 
     pushMatrix()
-    rotate(rotation)
-
-    for y in range(y0, y0+h, block_size):
-        for x in range(x0, x0+w, block_size):
-            #print random(1),abs(noise(n)), smoothstep(thresh_min, thresh_max, (y-y0)/h), 1.0*(y-y0)/h
-            
+    translate(x0+w/2, y0+h/2)
+    #print "y/h = ", 1.0*y0/height, y0
+    if random(1) > 0.5:
+        rotate(1.0*y0/height * max_rotation)
+    else:
+        rotate(-1.0*y0/height * max_rotation)
+ 
+    strokeWeight(1.25)
+    n = random(100)
+    dn = 0.2
+    for y in range(int(round(y0)), int(round(y0+h)), int(round(block_size))):
+        for x in range(int(round(x0)), int(round(x0+w)), int(round(block_size))): 
             if random(1) > smoothstep(thresh_min, thresh_max, 1.0*(y-y0)/h):
-                beginShape()            
-                fill(hex2col(colors[int(random(len(colors)))]))            
-                noStroke()
-                vertex(x,y)
-                vertex(x+block_size, y)
-                vertex(x+block_size, y+block_size)
-                vertex(x,y+block_size)
+                beginShape()   
+                #ind = int(random(len(colors)))
+                ind = int(noise(n)*len(colors))
+                col = hex2col(colors[ind])       
+                fill(col)            
+                stroke(col)
+                vertex(x-x0,y-y0)
+                vertex(x+block_size-x0, y-y0)
+                vertex(x+block_size-x0, y+block_size-y0)
+                vertex(x-x0,y+block_size-y0)
                 endShape(CLOSE)
-
-
-    strokeWeight(line_weight+1)
-    stroke(hex2col(line_color))
-    beginShape()
-    noFill()
-    b = block_size
-    vertex(x0, y0)
-    vertex(x0 + w, y0)
-    vertex(x0 + w, y0+h+b/2)
-    vertex(x0, y0+h+b/2)
-    endShape(CLOSE)
+                n += dn
+    
+    # draw brick's outline
+    if line_weight > 0:
+        
+        strokeWeight(line_weight)
+        stroke(hex2col(line_color))
+        beginShape()
+        noFill()
+        b = block_size
+        vertex(x0, y0)
+        vertex(x0 + w, y0)
+        vertex(x0 + w, y0+h+b/2)
+        vertex(x0, y0+h+b/2)
+        endShape(CLOSE)
     popMatrix()
+    
+'''
+class IniRunner:
+    def __init__(self, ini_fpath = 'config.ini'):
+        self._ini_fpath = ini_fpath
+        self._default = {
+            'seeds': 4,
+            'reps': 8,
+            'rattling': 2,
+            'width': 4,
+            'height': 4,
+            'edges': 60,
+            'nodes': 60,
+            'col_begin': '55434680',
+            'col_end': '2a221bd0',
+            'coarse': 50,
+            'brick_number': 3,
+            'brick_width': 60,
+            'brick_height': 100,
+            'brick_block': 8,
+            'brick_colors': ['ff0000ff', '00ff00ff', '0000ffff'],
+            'brick_rotations': [0, -0.25, 0.25, -0.5, 0.5],
+            'brick_line_width': 0,
+            'brick_line_color': '404040d0'
+        }
+        self._layers = OD()
+        self._read_ini()
+
+    @classmethod
+    def hex2col(self, hexstr):
+        if len(hexstr) == 8:
+            return color(int(hexstr[:2], 16), int(hexstr[2:4], 16), int(hexstr[4:6], 16), int(hexstr[6:], 16))
+        else:
+            return color(int(hexstr[:2], 16), int(hexstr[2:4], 16), int(hexstr[4:6], 16))
+
+    def _read_ini(self):
+        with open(self._ini_fpath) as f:
+            lines = f.readlines()
+        remove_comment = lambda x: x.split('#')[0]
+        split_line = lambda x: remove_comment(x).split('=')
+        parse = lambda x: (split_line(x)[0].strip(), '') if len(split_line(x)) == 1 else (split_line(x)[0] , split_line(x)[1].strip()) 
+        n_layer = 0
+        for l in lines:
+            lleft, lright = parse(l)
+            if 'layer' in lleft:
+                n_layer += 1
+                self._layers[n_layer] = self._default
+                continue
+            if 'col' not in lleft:
+                if 'brick_rotations' in lleft:
+                    self._layers[n_layer][lleft] = [float(lr.strip())  for lr in lright.split(',')] 
+                else:
+                    try:
+                        self._layers[n_layer][lleft] = int(lright)
+                    except:
+                        pass
+            else:
+                if 'brick_colors' in lleft:
+                    self._layers[n_layer][lleft] = [c  for c in lright.split(',')] 
+                else:
+                    try:
+                        self._layers[n_layer][lleft] = color(hex2col(lright))
+                    except:
+                        pass
+
+
+    def draw(self, n_origins = 18):
+        n_pixels = width*height
+        ind1d_to_2d = lambda xy: (max(int(0.1*width), int(xy) % int(0.9*width)), max(int(0.1*height), int(xy)//height % (0.9*height)))
+        create_origin = lambda : ind1d_to_2d(int(n_pixels/2 + randomGaussian()*n_pixels/5) % n_pixels)
+
+        origins = [create_origin() for _ in range(n_origins)]
+        for ind, configs in self._layers.items():
+            ### layer i
+            layer = self._layers[ind]
+            nodeset = NodeSet(nodes_per_cloud = layer['nodes'],
+                coarse = layer['coarse'],
+                color_begin = layer['col_begin'],
+                color_end = layer['col_end'],
+                rattling = layer['rattling'])
+
+            n_bricks = layer['brick_number']
+            #print("----", ind, layer['brick_colors'])
+            # TODO: fix rotation in config.ini, fix line colour
+            for _ in range(n_bricks):
+                brick(random(0.2*width, 0.8*width), random(0.2*height, 0.8*height),
+                        w = layer['brick_width'], h = layer['brick_height'],
+                        block_size = layer['brick_block'],
+                        colors = layer['brick_colors'],
+                        line_weight = layer['brick_line_width'])
+            
+            ### nodes of layer i
+            for _ in range(layer['reps']): 
+                for i in range(layer['seeds']):
+                    ind_or = NodeSet._randint(n_origins)
+                    nodeset.create_cloud(*origins[ind_or],
+                        w=width/layer['width'],
+                        h=height/layer['height'])
+                    nodeset.min_tree(layer['edges'],
+                    origin = (origins[ind_or][0] + random(-25, 25), origins[ind_or][1] + random(-25, 25)))
+                    nodeset.draw(nodes = True)
+                print "rep ", _
+                nodeset.clear_cloud()
+
+'''            
 
 def setup():
     size(900,600)
     colorMode(RGB, 255, 255, 255);
     #background(unhex('d1e0de'))
-    background(255, 255, 255, 255)
+    background(203, 203, 230, 255)
     blendMode(BLEND)
     smooth()
     noLoop()
@@ -246,25 +366,39 @@ def setup():
     
     
 def draw():
-    
     n_pixels = width*height
     ind1d_to_2d = lambda xy: (max(int(0.1*width), int(xy) % int(0.9*width)), max(int(0.1*height), int(xy)//height % (0.9*height)))
     create_origin = lambda : ind1d_to_2d(int(n_pixels/2 + randomGaussian()*n_pixels/5) % n_pixels)
 
-    coarse = round(width/50)
     n_origins = int(round(width/18))
     origins = [create_origin() for _ in range(n_origins)]
-    
+    brick_cols = [['2E232AFF', '635460FF', '696874FF', 'A79AABFF'],
+                   ['2E627CFF', '1A2123FF', '142130FF', '0D0D16FF'],
+                   ['261D2CFF', '3E3458FF', '666E90FF', 'ACA6CBFF'],
+                   ['E1B389FF', 'E67649FF', 'A0B49FFF', '4C4944FF'],
+                   ['2A222BFF', '2E101FFF', '1D2436FF', '093244FF']
+                   ]
 
     ### layer 1 of web
+    n_bricks = 3
+    brick_width = width/6
+    brick_height = height/6
+    brick_block = 10
     n_seeds = 4
     reps = 8
     rattling = 2 # how much the nodes can deviate (+-) in pixels
     cloud_width, cloud_height = width/4, height/4
     n_edges = 60
+    coarse = round(width/50)
     nodeset = NodeSet(nodes_per_cloud = 400, coarse = coarse,
-                      color_begin = hex2col('55433680'), color_end = hex2col('2a221bd0'),
+                      color_begin = hex2col('1b1711a0'), color_end = hex2col('161412d0'),
                       rattling = rattling)
+
+    for _ in range(n_bricks):
+        brick(random(0.2*width, 0.8*width), random(-0.2*height, 0.8*height),
+              w = brick_width, h = brick_height,
+              colors = brick_cols[int(random(len(brick_cols)))])
+
     for _ in range(reps): 
         for i in range(n_seeds):
             ind_or = NodeSet._randint(n_origins)
@@ -275,62 +409,85 @@ def draw():
         nodeset.clear_cloud()
     
     ### layer 2 of web
+    n_bricks = 2
+    brick_width = width/7
+    brick_height = height/7
+    brick_block = 10
     n_seeds = 3
-    reps = 5
-    rattling = 2
-    coarse = round(coarse/2)
-    cloud_width, cloud_height = width/8, height/8
+    reps = 6
+    rattling = 2 # how much the nodes can deviate (+-) in pixels
+    cloud_width, cloud_height = width/5, height/5
     n_edges = 50
+    coarse = round(width/40)
     nodeset = NodeSet(nodes_per_cloud = 300, coarse = coarse,
-                      color_begin = hex2col('9E958180'), color_end = hex2col('665b44D0'),
+                      color_begin = hex2col('594B44a0'), color_end = hex2col('3D342Ff0'),
                       rattling = rattling)
-    
+
+    for _ in range(n_bricks):
+        brick(random(0.2*width, 0.8*width), random(-0.2*height, 0.8*height),
+              w = brick_width, h = brick_height,
+              colors = brick_cols[int(random(len(brick_cols)))])
+
     for _ in range(reps): 
         for i in range(n_seeds):
-            #origin = create_seed() # tuple
             ind_or = NodeSet._randint(n_origins)
             nodeset.create_cloud(*origins[ind_or], w=cloud_width, h=cloud_height)
             nodeset.min_tree(n_edges, origin = (origins[ind_or][0] + random(-25, 25), origins[ind_or][1] + random(-25, 25)))
             nodeset.draw(nodes = True)
         print "rep ", _
         nodeset.clear_cloud()
-        
-        
+    
     ### layer 3 of web
-    n_seeds = 3
-    reps = 4
-    rattling = 2
-    cloud_width, cloud_height = width/6, height/8
-    n_edges = 40
-    nodeset = NodeSet(nodes_per_cloud = 250, coarse = coarse,
-                      color_begin = hex2col('4f5a4080'), color_end = hex2col('252a1eD0'),
+    n_bricks = 2
+    brick_width = width/7
+    brick_height = height/7
+    brick_block = 10
+    n_seeds = 5
+    reps = 7
+    rattling = 2 # how much the nodes can deviate (+-) in pixels
+    cloud_width, cloud_height = width/6, height/6
+    n_edges = 50
+    coarse = round(width/60)
+    nodeset = NodeSet(nodes_per_cloud = 300, coarse = coarse,
+                      color_begin = hex2col('554336a0'), color_end = hex2col('2a221bd0'),
                       rattling = rattling)
-    
+
+    for _ in range(n_bricks):
+        brick(random(0.2*width, 0.8*width), random(-0.2*height, 0.8*height),
+              w = brick_width, h = brick_height,
+              colors = brick_cols[int(random(len(brick_cols)))])
+
     for _ in range(reps): 
         for i in range(n_seeds):
-            #origin = create_seed() # tuple
             ind_or = NodeSet._randint(n_origins)
             nodeset.create_cloud(*origins[ind_or], w=cloud_width, h=cloud_height)
             nodeset.min_tree(n_edges, origin = (origins[ind_or][0] + random(-25, 25), origins[ind_or][1] + random(-25, 25)))
             nodeset.draw(nodes = True)
         print "rep ", _
         nodeset.clear_cloud()
-        
         
     ### layer 4 of web
-    n_seeds = 4
+    n_bricks = 0
+    brick_width = width/10
+    brick_height = height/10
+    brick_block = 10
+    n_seeds = 3
     reps = 6
-    rattling = 2
+    rattling = 2 # how much the nodes can deviate (+-) in pixels
     cloud_width, cloud_height = width/6, height/6
-    n_edges = 30
-    coarse = round(coarse/2)
-    nodeset = NodeSet(nodes_per_cloud = 250, coarse = coarse,
-                      color_begin = hex2col('55353580'), color_end = hex2col('2c1b1bD0'),
+    n_edges = 60
+    coarse = round(width/60)
+    nodeset = NodeSet(nodes_per_cloud = 400, coarse = coarse,
+                      color_begin = hex2col('0E0F12a0'), color_end = hex2col('070808d0'),
                       rattling = rattling)
-    
+
+    for _ in range(n_bricks):
+        brick(random(0.2*width, 0.8*width), random(-0.2*height, 0.8*height),
+              w = brick_width, h = brick_height,
+              colors = brick_cols[int(random(len(brick_cols)))])
+
     for _ in range(reps): 
         for i in range(n_seeds):
-            #origin = create_seed() # tuple
             ind_or = NodeSet._randint(n_origins)
             nodeset.create_cloud(*origins[ind_or], w=cloud_width, h=cloud_height)
             nodeset.min_tree(n_edges, origin = (origins[ind_or][0] + random(-25, 25), origins[ind_or][1] + random(-25, 25)))
@@ -338,15 +495,27 @@ def draw():
         print "rep ", _
         nodeset.clear_cloud()
         
+        
     ### layer 5 of web
-    n_seeds = 4
+    n_bricks = 0
+    brick_width = width/10
+    brick_height = height/10
+    brick_block = 10
+    n_seeds = 3
     reps = 5
     rattling = 2 # how much the nodes can deviate (+-) in pixels
-    cloud_width, cloud_height = width/6, height/4
+    cloud_width, cloud_height = width/4, height/4
     n_edges = 60
-    nodeset = NodeSet(nodes_per_cloud = 400, coarse = coarse,
-                      color_begin = hex2col('55433680'), color_end = hex2col('2a221bd0'),
+    coarse = round(width/80)
+    nodeset = NodeSet(nodes_per_cloud = 350, coarse = coarse,
+                      color_begin = hex2col('2F3A48a0'), color_end = hex2col('1E252Ed0'),
                       rattling = rattling)
+
+    for _ in range(n_bricks):
+        brick(random(0.2*width, 0.8*width), random(-0.2*height, 0.8*height),
+              w = brick_width, h = brick_height,
+              colors = brick_cols[int(random(len(brick_cols)))])
+
     for _ in range(reps): 
         for i in range(n_seeds):
             ind_or = NodeSet._randint(n_origins)
@@ -357,19 +526,56 @@ def draw():
         nodeset.clear_cloud()
         
     ### layer 6 of web
-    n_seeds = 2
-    reps = 4
-    rattling = 2
-    cloud_width, cloud_height = width/8, height/10
-    n_edges = 40
-    coarse = coarse/2
-    nodeset = NodeSet(nodes_per_cloud = 250, coarse = coarse,
-                      color_begin = hex2col('4f5a4080'), color_end = hex2col('252a1eD0'),
+    n_bricks = 0
+    brick_width = width/10
+    brick_height = height/10
+    brick_block = 10
+    n_seeds = 4
+    reps = 5
+    rattling = 2 # how much the nodes can deviate (+-) in pixels
+    cloud_width, cloud_height = width/7, height/7
+    n_edges = 60
+    coarse = round(width/80)
+    nodeset = NodeSet(nodes_per_cloud = 350, coarse = coarse,
+                      color_begin = hex2col('0C0C13a0'), color_end = hex2col('0E0E11d0'),
                       rattling = rattling)
-    
+
+    for _ in range(n_bricks):
+        brick(random(0.2*width, 0.8*width), random(-0.2*height, 0.8*height),
+              w = brick_width, h = brick_height,
+              colors = brick_cols[int(random(len(brick_cols)))])
+
     for _ in range(reps): 
         for i in range(n_seeds):
-            #origin = create_seed() # tuple
+            ind_or = NodeSet._randint(n_origins)
+            nodeset.create_cloud(*origins[ind_or], w=cloud_width, h=cloud_height)
+            nodeset.min_tree(n_edges, origin = (origins[ind_or][0] + random(-25, 25), origins[ind_or][1] + random(-25, 25)))
+            nodeset.draw(nodes = True)
+        print "rep ", _
+        nodeset.clear_cloud()
+        
+    ### layer 7 of web
+    n_bricks = 0
+    brick_width = width/10
+    brick_height = height/10
+    brick_block = 10
+    n_seeds = 4
+    reps = 4
+    rattling = 2 # how much the nodes can deviate (+-) in pixels
+    cloud_width, cloud_height = width/7, height/7
+    n_edges = 70
+    coarse = round(width/80)
+    nodeset = NodeSet(nodes_per_cloud = 350, coarse = coarse,
+                      color_begin = hex2col('1b1711a0'), color_end = hex2col('161412d0'),
+                      rattling = rattling)
+
+    for _ in range(n_bricks):
+        brick(random(0.2*width, 0.8*width), random(-0.2*height, 0.8*height),
+              w = brick_width, h = brick_height,
+              colors = brick_cols[int(random(len(brick_cols)))])
+
+    for _ in range(reps): 
+        for i in range(n_seeds):
             ind_or = NodeSet._randint(n_origins)
             nodeset.create_cloud(*origins[ind_or], w=cloud_width, h=cloud_height)
             nodeset.min_tree(n_edges, origin = (origins[ind_or][0] + random(-25, 25), origins[ind_or][1] + random(-25, 25)))
@@ -379,3 +585,4 @@ def draw():
     
     saveFrame("/tmp/spider_webs_%06d.png" % NodeSet._randint(999999));
     print "=== done! ==="
+    
